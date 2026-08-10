@@ -9,7 +9,7 @@ class EnvSettings(BaseSettings):
     OLLAMA_SUB_AGENT_MODEL: str = "gemma4:cloud"
     OLLAMA_CONTEXT_COMPRESSION_MODEL: str = "gpt-oss:120b-cloud"
 
-    CONTEXT_TOKENS_ALLOWED: int = 16384
+    CONTEXT_TOKENS_ALLOWED: int = 65536
     AGENT_WORK_DIR: str
 
     SHELL_COMMANDS_ALLOWED: list = [
