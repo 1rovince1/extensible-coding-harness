@@ -2,13 +2,13 @@ import logging
 
 from langsmith import traceable
 
-from coding_harness.states import MainAgentState, SubAgentState
+from coding_harness.states import MainAgentState, GenericSubAgentState
 
 logger = logging.getLogger(__name__)
 
 
 @traceable
-async def tool_distributor(state: MainAgentState | SubAgentState):
+async def tool_distributor(state: MainAgentState | GenericSubAgentState):
     logger.info("Inside tool distributor node")
 
     all_tool_calls = state.get("tool_calls", [])

@@ -22,7 +22,7 @@ class MainAgentState(TypedDict):
     skill_registry: dict
 
 
-class SubAgentState(TypedDict):
+class GenericSubAgentState(TypedDict):
     current_task: str
     # session_messages: Annotated[list[dict[str, str]], operator.add]
     session_messages: list[dict[str, str]]

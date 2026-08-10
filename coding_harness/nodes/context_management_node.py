@@ -3,7 +3,7 @@ import logging
 from langsmith import traceable
 
 from services.ollama_llm_service import call_llm
-from coding_harness.states import MainAgentState, SubAgentState
+from coding_harness.states import MainAgentState, GenericSubAgentState
 from config.env_config import env_settings
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ Important things like the plan of work should not be summarised and kept as they
 
 
 @traceable
-async def context_manager(state: MainAgentState | SubAgentState):
+async def context_manager(state: MainAgentState | GenericSubAgentState):
     logger.info("Inside context manager node")
 
     tool_calls = state.get("tool_calls", [])

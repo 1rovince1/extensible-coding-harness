@@ -1,5 +1,5 @@
 from langgraph.graph import START, END, StateGraph
-from coding_harness.states import SubAgentState
+from coding_harness.states import GenericSubAgentState
 from coding_harness.nodes import (
     generic_sub_agent,
     function_call,
@@ -10,7 +10,7 @@ from coding_harness.nodes import (
 from coding_harness.conditional_edges import *
 
 
-sub_agent_orchestration = StateGraph(SubAgentState)
+sub_agent_orchestration = StateGraph(GenericSubAgentState)
 
 
 # nodes
