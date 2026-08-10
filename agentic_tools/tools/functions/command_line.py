@@ -8,7 +8,8 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_CMDS = env_settings.SHELL_COMMANDS_ALLOWED
 
-async def execute_shell_command(command: str):
+
+async def execute_shell_command(command: str) -> str:
     """
     Execute a shell command and return its output
     """

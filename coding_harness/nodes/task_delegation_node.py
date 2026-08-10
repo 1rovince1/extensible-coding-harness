@@ -4,7 +4,7 @@ import asyncio
 from langsmith import traceable
 
 from coding_harness.states import MainAgentState, SubAgentState
-from coding_harness.orchestration_sub_agent import compiled_sub_agent_orchestration
+from coding_harness.orchestration_generic_sub_agent import compiled_sub_agent_orchestration
 
 logger = logging.getLogger(__name__)
 

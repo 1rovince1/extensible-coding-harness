@@ -1,5 +1,5 @@
 from coding_harness.orchestration_main_agent import compiled_harness
-from coding_harness.orchestration_sub_agent import compiled_sub_agent_orchestration
+from coding_harness.orchestration_generic_sub_agent import compiled_sub_agent_orchestration
 
 
 try:

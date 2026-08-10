@@ -6,8 +6,12 @@ from langsmith import traceable
 from services.ollama_llm_service import call_llm
 from coding_harness.states import SubAgentState
 from config.env_config import env_settings
-from coding_harness.tool_registries.sub_agent_tool_registry import TOOLS as SUB_AGENT_TOOLS
+from coding_harness.tool_registries.generic_sub_agent_tool_registry import TOOLS as SUB_AGENT_TOOLS
 from agentic_tools.adapter import build_ollama_tools
+from coding_harness.skill_registries.main_agent_skill_registry import (
+    SKILLS as SUB_AGENT_SKILLS,
+    SKILLS_METADATA as SUB_AGENT_SKILLS_METADATA
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +26,14 @@ Your tasks:
     - Any shell commands executed in this working dir itself; you can read/write files using shell commands
     - Report to the master agent after the task is done with clear description and proof of what has been done
 
-Allowed shell commands via the shell tool are: {env_settings.SHELL_COMMANDS_ALLOWED}
-If you want to write to a file use this method: cat > filename <<'EOF'.....
-If you want to update some part an existing file use: sed ....
+You also have access to a set of skills given below.
+A skill is a set of instructions for more efficient of tools, or some specific tasks.
+Available Skills:
+{SUB_AGENT_SKILLS_METADATA}
 """
+# Allowed shell commands via the shell tool are: {env_settings.SHELL_COMMANDS_ALLOWED}
+# If you want to write to a file use this method: cat > filename <<'EOF'.....
+# If you want to update some part an existing file use: sed ....
 
 agent_tool_registry = {**SUB_AGENT_TOOLS}
 agent_tools = build_ollama_tools(agent_tool_registry)
@@ -51,7 +59,9 @@ async def generic_sub_agent(state: SubAgentState):
     
     state_updates = {
         # "session_messages": []
-        "session_messages": state.get("session_messages", [])
+        "session_messages": state.get("session_messages", []),
+        "tool_registry": agent_tool_registry,
+        "skill_registry": SUB_AGENT_SKILLS
     }
     state_updates["agent_calls"] = state.get("agent_calls", 0) + 1
     if llm_response:
@@ -64,7 +74,6 @@ async def generic_sub_agent(state: SubAgentState):
             "content": llm_response.message.content
         })
     if llm_response.message.tool_calls:
-        state_updates["tool_registry"] = agent_tool_registry
         state_updates["tool_calls"] = [
             {
                 "tool_name": tool_call.function.name,
