@@ -24,9 +24,12 @@ async def load_skills(skill_list: list[str]) -> dict[str, dict[str, str]]:
         skill_content = ""
         async with aiofiles.open(skill_file_path, "r") as skill_file:
             raw_skill_file_content = await skill_file.read()
+            # print(raw_skill_file_content)
 
         skill_metadata = markdown_parser.extract_frontmatter(raw_skill_file_content)
         skill_content = markdown_parser.extract_markdown_content(raw_skill_file_content)
+        # print(skill_metadata)
+        # print(skill_content)
 
         skill_data[skill_name] = {
             "skill_metadata": skill_metadata,

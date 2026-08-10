@@ -17,7 +17,22 @@ agent_tool_registry = {**MAIN_AGENT_TOOLS}
 agent_tools = build_ollama_tools(agent_tool_registry)
 agent_skill_registry = main_agent_skill_registry.SKILL_REGISTRY
 agent_skills_metadata = main_agent_skill_registry.SKILLS_METADATA
-agent_skills_metadata = "\n\n".join(agent_skills_metadata)
+formatted_skills_metadata = "\n\n".join(
+    f"skill name: {skill_metadata['name']}"
+    f"skill description: {skill_metadata['description']}"
+    for skill_metadata in agent_skills_metadata
+)
+# formatted_skills_metadata = ""
+# for skill_metadata in agent_skills_metadata:
+#     formatted_skills_metadata = (
+#         formatted_skills_metadata +
+#         "\n\n" +
+#         "skill name: " + skill_metadata["name"] +
+#         "skill description: " + skill_metadata["description"]
+#     )
+# print("registry in main agent", agent_skill_registry)
+# print("raw_metadata", agent_skills_metadata)
+# print("formatted", formatted_skills_metadata)
 
 
 prompt = f"""
@@ -53,7 +68,7 @@ You also have access to a set of skills given below, which you can load using th
 A skill is a set of instructions for more efficient use of tools, or some specific tasks.
 
 Available Skills:
-{agent_skills_metadata}
+{formatted_skills_metadata.strip()}
 """
 # Allowed shell commands via the shell tool are: {env_settings.SHELL_COMMANDS_ALLOWED}
 # If you want to write to a file use this method: cat > filename <<'EOF'.....
@@ -65,7 +80,7 @@ async def main_agent(state: MainAgentState):
     logger.info("Inside main agent node")
     logger.debug(f"state inside main agent node: {state}")
     os.makedirs(env_settings.AGENT_WORK_DIR, exist_ok=True)
-    # print(prompt)
+    print(prompt)
 
     messages = [{
         "role": "system",

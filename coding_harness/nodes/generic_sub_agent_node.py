@@ -17,7 +17,11 @@ agent_tool_registry = {**SUB_AGENT_TOOLS}
 agent_tools = build_ollama_tools(agent_tool_registry)
 agent_skill_registry = generic_sub_agent_skill_registry.SKILL_REGISTRY
 agent_skills_metadata = generic_sub_agent_skill_registry.SKILLS_METADATA
-agent_skills_metadata = "\n\n".join(agent_skills_metadata)
+formatted_skills_metadata = "\n\n".join(
+    f"skill name: {skill_metadata['name']}"
+    f"skill description: {skill_metadata['description']}"
+    for skill_metadata in agent_skills_metadata
+)
 
 
 prompt = f"""
