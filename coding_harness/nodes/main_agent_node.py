@@ -9,19 +9,20 @@ from config.env_config import env_settings
 from coding_harness.tool_registries.main_agent_tool_registry import TOOLS as MAIN_AGENT_TOOLS
 from agentic_tools.adapter import build_ollama_tools
 from coding_harness.skill_registries.main_agent_skill_registry import main_agent_skill_registry
+from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
 
 logger = logging.getLogger(__name__)
 
 
 agent_tool_registry = {**MAIN_AGENT_TOOLS}
 agent_tools = build_ollama_tools(agent_tool_registry)
-agent_skill_registry = main_agent_skill_registry.SKILL_REGISTRY
-agent_skills_metadata = main_agent_skill_registry.SKILLS_METADATA
-formatted_skills_metadata = "\n\n".join(
-    f"skill name: {skill_metadata['name']}"
-    f"skill description: {skill_metadata['description']}"
-    for skill_metadata in agent_skills_metadata
-)
+# agent_skill_registry = main_agent_skill_registry.SKILL_REGISTRY
+# agent_skills_metadata = main_agent_skill_registry.SKILLS_METADATA
+# formatted_skills_metadata = "\n\n".join(
+#     f"skill name: {skill_metadata['name']}"
+#     f"skill description: {skill_metadata['description']}"
+#     for skill_metadata in agent_skills_metadata
+# )
 # formatted_skills_metadata = ""
 # for skill_metadata in agent_skills_metadata:
 #     formatted_skills_metadata = (
@@ -35,41 +36,42 @@ formatted_skills_metadata = "\n\n".join(
 # print("formatted", formatted_skills_metadata)
 
 
-prompt = f"""
-You are a coding assistant.
-You have access to a few tools to help with your job.
-Your tasks:
-    - Analyze the user request
-    - Ask to the user for any clarifications required to perform the given task
-    - If the task is of less complexity, do it on your own
-    - If the task is too complex or multi-step, break it down into sub-tasks, which you can delegate to sub agents with detailed instructions on what the task is, and what actions to take, file paths etc.
-    - If nature of sub-tasks allows it, then multiple sub agents should be used in parallel to keep individual workload in check
-    - Try to use sub agents at every opportunity there is a task that can be broken down into sub-tasks and/or parallelized, like when you have to work on multiple files at a time
-    - If multiple sub-agents are writing/editing code, then they should be clearly instructed so that code is coherent
-    - Task given to a sub agent should be simple and complete instructions should be provided for guidance
-    - You and sub agents have access to the same working dir, and all the coding should be done in there
-    - Any shell commands executed in this working dir itself; you can read/write files using shell commands
-    - Consolidate the final reply to the user after the task is done
+# prompt = f"""
+# You are a coding assistant.
+# You have access to a few tools to help with your job.
+# Your tasks:
+#     - Analyze the user request
+#     - Ask to the user for any clarifications required to perform the given task
+#     - If the task is of less complexity, do it on your own
+#     - If the task is too complex or multi-step, break it down into sub-tasks, which you can delegate to sub agents with detailed instructions on what the task is, and what actions to take, file paths etc.
+#     - If nature of sub-tasks allows it, then multiple sub agents should be used in parallel to keep individual workload in check
+#     - Try to use sub agents at every opportunity there is a task that can be broken down into sub-tasks and/or parallelized, like when you have to work on multiple files at a time
+#     - If multiple sub-agents are writing/editing code, then they should be clearly instructed so that code is coherent
+#     - Task given to a sub agent should be simple and complete instructions should be provided for guidance
+#     - You and sub agents have access to the same working dir, and all the coding should be done in there
+#     - Any shell commands executed in this working dir itself; you can read/write files using shell commands
+#     - Consolidate the final reply to the user after the task is done
 
-Instructions when calling sub-agents:
-    - When calling sub-agents, you will act as their manager
-    - You will be the glue among the sib-agents
-    - The subagents start with an empty context, so they do not know anything except the given task
-    - If you want multiple sub-agents to work cohesively, then you need to clearly instruct them on:
-        1. what functions (with names) to create - so that they do not go one creating them with whatever name
-        2. what APIs, if required, to create, etc.
-        3. any task that is concerned with combining the work of multiple sub-agents, should be done by yourself only
+# Instructions when calling sub-agents:
+#     - When calling sub-agents, you will act as their manager
+#     - You will be the glue among the sib-agents
+#     - The subagents start with an empty context, so they do not know anything except the given task
+#     - If you want multiple sub-agents to work cohesively, then you need to clearly instruct them on:
+#         1. what functions (with names) to create - so that they do not go one creating them with whatever name
+#         2. what APIs, if required, to create, etc.
+#         3. any task that is concerned with combining the work of multiple sub-agents, should be done by yourself only
 
-Given a coding task from user, you have to do the task if simple and/or single step.
-If the task is complex and/or multi-step, you have to create a plan and then use sub-agents to delegate the tasks,
-with proper instructions so that the final application code is cohesive.
+# Given a coding task from user, you have to do the task if simple and/or single step.
+# If the task is complex and/or multi-step, you have to create a plan and then use sub-agents to delegate the tasks,
+# with proper instructions so that the final application code is cohesive.
 
-You also have access to a set of skills given below, which you can load using the load skill tool.
-A skill is a set of instructions for more efficient use of tools, or some specific tasks.
+# You also have access to a set of skills given below, which you can load using the load skill tool.
+# A skill is a set of instructions for more efficient use of tools, or some specific tasks.
 
-Available Skills:
-{formatted_skills_metadata.strip()}
-"""
+# Available Skills:
+# {formatted_skills_metadata.strip()}
+# """
+
 # Allowed shell commands via the shell tool are: {env_settings.SHELL_COMMANDS_ALLOWED}
 # If you want to write to a file use this method: cat > filename <<'EOF'.....
 # If you want to update some part an existing file use: sed ....
@@ -80,7 +82,19 @@ async def main_agent(state: MainAgentState):
     logger.info("Inside main agent node")
     logger.debug(f"state inside main agent node: {state}")
     os.makedirs(env_settings.AGENT_WORK_DIR, exist_ok=True)
-    print(prompt)
+
+    prompt_template = await load_prompt_template(prompt_file="main_agent.system")
+    agent_skills_metadata = main_agent_skill_registry.SKILLS_METADATA
+    formatted_skills_metadata = "\n\n".join(
+        f"skill name: {skill_metadata['name']}\n"
+        f"skill description: {skill_metadata['description']}"
+        for skill_metadata in agent_skills_metadata
+    )
+    prompt_vars = {
+        "formatted_skills_metadata": formatted_skills_metadata
+    }
+    prompt = compile_prompt(prompt_content=prompt_template, input_mapping=prompt_vars)
+    # print(prompt)
 
     messages = [{
         "role": "system",
@@ -98,7 +112,7 @@ async def main_agent(state: MainAgentState):
     state_updates = {
         # "session_messages": []
         "session_messages": state.get("session_messages", []),
-        "skill_registry": agent_skill_registry
+        "skill_registry": main_agent_skill_registry.SKILL_REGISTRY
     }
     state_updates["agent_calls"] = state.get("agent_calls", 0) + 1
     if llm_response:
