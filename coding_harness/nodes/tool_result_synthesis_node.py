@@ -8,13 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 @traceable
-async def tool_synthesizer(state: MainAgentState):
+async def tool_result_synthesizer(state: MainAgentState):
     logger.info("Inside tool synthesizer node")
 
     function_calls = state.get("function_calls", [])
     function_results = state.get("function_results", [])
     sub_agent_calls = state.get("sub_agent_calls", [])
     sub_agent_results = state.get("sub_agent_results", [])
+    skill_calls = state.get("skill_calls", [])
+    skill_results = state.get("skill_results", [])
 
     sub_agent_responses = [
         sub_agent_result["session_messages"][-1]["content"]
@@ -40,8 +42,8 @@ async def tool_synthesizer(state: MainAgentState):
     #     "session_messages": state.get("session_messages", []) + tool_messages
     # }
 
-    tool_calls = function_calls + sub_agent_calls
-    tool_results = function_results + sub_agent_responses
+    tool_calls = function_calls + sub_agent_calls + skill_calls
+    tool_results = function_results + sub_agent_responses + skill_results
 
     logger.info("Exiting tool synthesizer node")
     return{

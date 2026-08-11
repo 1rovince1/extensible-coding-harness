@@ -2,6 +2,7 @@ from coding_harness.nodes.main_agent_node import main_agent
 from coding_harness.nodes.function_call_node import function_call
 from coding_harness.nodes.generic_sub_agent_node import generic_sub_agent
 from coding_harness.nodes.context_management_node import context_manager
-from coding_harness.nodes.tool_distribution_node import tool_distributor
-from coding_harness.nodes.tool_synthesis_node import tool_synthesizer
+from coding_harness.nodes.tool_request_distribution_node import tool_request_distributor
+from coding_harness.nodes.tool_result_synthesis_node import tool_result_synthesizer
+from coding_harness.nodes.skill_load_node import skill_loader
 from coding_harness.nodes.task_delegation_node import task_delegator

@@ -14,12 +14,16 @@ class MainAgentState(TypedDict):
     tool_registry: dict
     tool_calls: list
     tool_results: list
+
     function_calls: list
     function_results: list
+
     sub_agent_calls: list
     sub_agent_results: list
 
     skill_registry: dict
+    skill_calls: list
+    skill_results: list
 
 
 class GenericSubAgentState(TypedDict):
@@ -34,7 +38,10 @@ class GenericSubAgentState(TypedDict):
     tool_registry: dict
     tool_calls: list
     tool_results: list
+
     function_calls: list
     function_results: list
 
     skill_registry: dict
+    skill_calls: list
+    skill_results: list
