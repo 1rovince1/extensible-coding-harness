@@ -48,7 +48,7 @@ async def get_all_active_sessions():
         async for key in match_results:
             matching_keys.append(key)
     except Exception as e:
-        print(f"Exception {e}")
+        logger.exception(f"Exception occured while getting all active sessions", exc_info=True)
 
     sessions_data = await redis_manager.client.mget(matching_keys)
 

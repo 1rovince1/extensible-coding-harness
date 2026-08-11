@@ -5,9 +5,10 @@ from coding_harness.nodes import (
     main_agent,
     function_call,
     context_manager,
-    tool_distributor,
-    tool_synthesizer,
-    task_delegator
+    tool_request_distributor,
+    tool_result_synthesizer,
+    task_delegator,
+    skill_loader
 )
 from coding_harness.conditional_edges import *
 
@@ -20,8 +21,9 @@ code_harness.add_node("main_agent", main_agent)
 code_harness.add_node("function_call", function_call)
 code_harness.add_node("task_delegator", task_delegator)
 code_harness.add_node("context_manager", context_manager)
-code_harness.add_node("tool_distributor", tool_distributor)
-code_harness.add_node("tool_synthesizer", tool_synthesizer)
+code_harness.add_node("tool_request_distributor", tool_request_distributor)
+code_harness.add_node("tool_result_synthesizer", tool_result_synthesizer)
+code_harness.add_node("skill_loader", skill_loader)
 
 
 # # edges
@@ -62,14 +64,15 @@ code_harness.add_conditional_edges(
     "main_agent",
     tool_call_decision_edge,
     {
-        "tool_calls": "tool_distributor",
+        "tool_calls": "tool_request_distributor",
         "final_answer": END
     }
 )
-code_harness.add_edge("tool_distributor", "function_call")
-code_harness.add_edge("tool_distributor", "task_delegator")
-code_harness.add_edge(["function_call", "task_delegator"], "tool_synthesizer")
-code_harness.add_edge("tool_synthesizer", "context_manager")
+code_harness.add_edge("tool_request_distributor", "function_call")
+code_harness.add_edge("tool_request_distributor", "task_delegator")
+code_harness.add_edge("tool_request_distributor", "skill_loader")
+code_harness.add_edge(["function_call", "task_delegator", "skill_loader"], "tool_result_synthesizer")
+code_harness.add_edge("tool_result_synthesizer", "context_manager")
 
 
 # compilation

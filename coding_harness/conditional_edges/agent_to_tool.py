@@ -1,11 +1,11 @@
 import logging
 
-from coding_harness.states import MainAgentState, SubAgentState
+from coding_harness.states import MainAgentState, GenericSubAgentState
 
 logger = logging.getLogger(__name__)
 
 
-def tool_call_decision_edge(state: MainAgentState | SubAgentState) -> str:
+def tool_call_decision_edge(state: MainAgentState | GenericSubAgentState) -> str:
     logger.info("Inside tool call decision edge")
 
     combined_tool_calls = state.get("tool_calls", [])

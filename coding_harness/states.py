@@ -10,15 +10,23 @@ class MainAgentState(TypedDict):
     session_input_tokens: int
     session_output_tokens: int
     session_current_token_count: int
+
     tool_registry: dict
     tool_calls: list
     tool_results: list
+
     function_calls: list
     function_results: list
+
     sub_agent_calls: list
     sub_agent_results: list
 
-class SubAgentState(TypedDict):
+    skill_registry: dict
+    skill_calls: list
+    skill_results: list
+
+
+class GenericSubAgentState(TypedDict):
     current_task: str
     # session_messages: Annotated[list[dict[str, str]], operator.add]
     session_messages: list[dict[str, str]]
@@ -26,8 +34,14 @@ class SubAgentState(TypedDict):
     session_input_tokens: int
     session_output_tokens: int
     session_current_token_count: int
+
     tool_registry: dict
     tool_calls: list
     tool_results: list
+
     function_calls: list
     function_results: list
+
+    skill_registry: dict
+    skill_calls: list
+    skill_results: list

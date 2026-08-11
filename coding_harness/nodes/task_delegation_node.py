@@ -3,8 +3,8 @@ import asyncio
 
 from langsmith import traceable
 
-from coding_harness.states import MainAgentState, SubAgentState
-from coding_harness.orchestration_sub_agent import compiled_sub_agent_orchestration
+from coding_harness.states import MainAgentState, GenericSubAgentState
+from coding_harness.orchestration_generic_sub_agent import compiled_sub_agent_orchestration
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ async def task_delegator(state: MainAgentState):
             "role": "user",
             "content": f"Your task is: {task}"
         }]
-        sub_agent_state: SubAgentState = {
+        sub_agent_state: GenericSubAgentState = {
             "current_task": task,
             "session_messages": sub_agent_session_messages
         }
