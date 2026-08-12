@@ -2,8 +2,9 @@ import os
 import logging
 
 from langsmith import traceable
+from openai.types.responses.response import Response
 
-from services.llm_service import call_llm
+from services.llm_service import call_llm, call_openai_llm
 from coding_harness.states import MainAgentState
 from config.env_config import env_settings
 from coding_harness.tool_registries.main_agent_tool_registry import TOOLS as MAIN_AGENT_TOOLS
@@ -102,11 +103,17 @@ async def main_agent(state: MainAgentState):
     }]
     messages.extend(state.get("session_messages", []))
     
-    llm_response = await call_llm(
+    # llm_response = await call_llm(
+    #     messages=messages,
+    #     model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
+    #     tools=agent_tools,
+    #     think=True
+    # )
+    llm_response: Response = await call_openai_llm(
         messages=messages,
         model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
         tools=agent_tools,
-        think=True
+        think="medium"
     )
 
     state_updates = {
@@ -116,30 +123,30 @@ async def main_agent(state: MainAgentState):
     }
     state_updates["agent_calls"] = state.get("agent_calls", 0) + 1
     if llm_response:
-        state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.prompt_eval_count
-        state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.eval_count
-        state_updates["session_current_token_count"] = llm_response.prompt_eval_count + llm_response.eval_count
-    if llm_response.message.content:
+        state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.usage.input_tokens
+        state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.usage.output_tokens
+        state_updates["session_current_token_count"] = llm_response.usage.input_tokens + llm_response.usage.output_tokens
+    if llm_response.output_text:
         state_updates["session_messages"].append({
             "role": "assistant",
-            "content": llm_response.message.content
+            "content": llm_response.output_text
         })
-    if llm_response.message.tool_calls:
-        state_updates["tool_registry"] = agent_tool_registry
-        state_updates["tool_calls"] = [
-            {
-                "tool_name": tool_call.function.name,
-                "tool_args": tool_call.function.arguments
-            } for tool_call in llm_response.message.tool_calls
-        ]
-        state_updates["session_messages"].append({
-            "role": "assistant",
-            "tool_calls": [tool_call.model_dump() for tool_call in llm_response.message.tool_calls]
-        })
-    else:
-        state_updates["tool_registry"] = {}
-        state_updates["tool_calls"] = []
-        state_updates["tool_results"] = []
+    # if llm_response.tools:
+    #     state_updates["tool_registry"] = agent_tool_registry
+    #     state_updates["tool_calls"] = [
+    #         {
+    #             "tool_name": tool_call.function.name,
+    #             "tool_args": tool_call.function.arguments
+    #         } for tool_call in llm_response.message.tool_calls
+    #     ]
+    #     state_updates["session_messages"].append({
+    #         "role": "assistant",
+    #         "tool_calls": [tool_call.model_dump() for tool_call in llm_response.message.tool_calls]
+    #     })
+    # else:
+    #     state_updates["tool_registry"] = {}
+    #     state_updates["tool_calls"] = []
+    #     state_updates["tool_results"] = []
 
-    logger.info("Exiting main agent node")
-    return state_updates
+    # logger.info("Exiting main agent node")
+    # return state_updates
