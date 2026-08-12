@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from clients.ollama_llm_client import ollama_manager
+from clients.openai_llm_client import openai_manager
 from clients.redis_client import redis_manager
 from coding_harness.skill_registries.main_agent_skill_registry import main_agent_skill_registry
 from coding_harness.skill_registries.generic_sub_agent_skill_registry import generic_sub_agent_skill_registry
@@ -17,11 +18,13 @@ from api.routes.session_management import router as SessionRouter
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
     await ollama_manager.connect()
+    await openai_manager.connect()
     await redis_manager.connect()
     await main_agent_skill_registry.initialize_skills()
     await generic_sub_agent_skill_registry.initialize_skills()
     yield
     await redis_manager.disconnect()
+    await openai_manager.disconnect()
     await ollama_manager.disconnect()
 
 fastapi_app = FastAPI(

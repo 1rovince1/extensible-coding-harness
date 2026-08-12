@@ -3,6 +3,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class EnvSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
+    LLM_HOST_URL: str = "https://ollama.com"
+
     OLLAMA_HOST: str = "https://ollama.com"
     OLLAMA_API_KEY: str
     OLLAMA_MAIN_AGENT_MODEL: str = "gemma4:cloud"

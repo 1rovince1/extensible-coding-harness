@@ -2,7 +2,7 @@ import logging
 
 from langsmith import traceable
 
-from services.ollama_llm_service import call_llm
+from services.llm_service import call_llm
 from coding_harness.states import MainAgentState, GenericSubAgentState
 from config.env_config import env_settings
 

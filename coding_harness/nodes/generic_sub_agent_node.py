@@ -3,7 +3,7 @@ import logging
 
 from langsmith import traceable
 
-from services.ollama_llm_service import call_llm
+from services.llm_service import call_llm
 from coding_harness.states import GenericSubAgentState
 from config.env_config import env_settings
 from coding_harness.tool_registries.generic_sub_agent_tool_registry import TOOLS as SUB_AGENT_TOOLS

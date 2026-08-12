@@ -14,8 +14,22 @@ logger = logging.getLogger(__name__)
         retry_multiplier=5,
         exceptions_to_retry=[TimeoutError]
 )
+async def call_openai_llm(
+    messages: list[dict[str, str]],
+    model: str,
+    think: bool = False,
+    tools: list[dict[str, str]] | None = None
+):
+    pass
+
+
+@retry_with_backoff_async(
+        retry_count=5, 
+        retry_multiplier=5,
+        exceptions_to_retry=[TimeoutError]
+)
 async def call_llm(
-        messages: list[str],
+        messages: list[dict[str, str]],
         model: str,
         think: bool = False,
         tools: list[dict[str, str]] | None = None
