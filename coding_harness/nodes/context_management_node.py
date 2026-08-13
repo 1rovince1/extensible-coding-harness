@@ -36,10 +36,20 @@ async def context_manager(state: MainAgentState | GenericSubAgentState):
     tool_results = state.get("tool_results", [])
     tool_messages = []
     for idx, tool_call in enumerate(tool_calls):
+        # tool_messages.append({
+        #     "role": "tool",
+        #     "tool_name": tool_call["tool_name"],
+        #     "content": tool_results[idx]
+        # })
+        # tool_messages.append({
+        #     "type": "function_call_output",
+        #     "call_id": message.call_id,
+        #     "output": json.dumps(result)
+        # })
         tool_messages.append({
-            "role": "tool",
-            "tool_name": tool_call["tool_name"],
-            "content": tool_results[idx]
+            "type": "function_call_output",
+            "call_id": tool_call["tool_call_id"],
+            "output": tool_results[idx]
         })
 
     updated_session_messages = state.get("session_messages", []) + tool_messages

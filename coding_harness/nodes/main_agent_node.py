@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 
 from langsmith import traceable
 from openai.types.responses.response import Response
@@ -8,7 +9,7 @@ from services.llm_service import call_llm, call_openai_llm
 from coding_harness.states import MainAgentState
 from config.env_config import env_settings
 from coding_harness.tool_registries.main_agent_tool_registry import TOOLS as MAIN_AGENT_TOOLS
-from agentic_tools.adapter import build_ollama_tools
+from agentic_tools.adapter import build_ollama_tools, build_openai_tools
 from coding_harness.skill_registries.main_agent_skill_registry import main_agent_skill_registry
 from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
 
@@ -16,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 agent_tool_registry = {**MAIN_AGENT_TOOLS}
-agent_tools = build_ollama_tools(agent_tool_registry)
+# agent_tools = build_ollama_tools(agent_tool_registry)
+agent_tools = build_openai_tools(agent_tool_registry)
 # agent_skill_registry = main_agent_skill_registry.SKILL_REGISTRY
 # agent_skills_metadata = main_agent_skill_registry.SKILLS_METADATA
 # formatted_skills_metadata = "\n\n".join(
@@ -126,11 +128,54 @@ async def main_agent(state: MainAgentState):
         state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.usage.input_tokens
         state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.usage.output_tokens
         state_updates["session_current_token_count"] = llm_response.usage.input_tokens + llm_response.usage.output_tokens
+
+    for message in llm_response.output:
+        if message.type != "reasoning":
+            continue
+        summaries = []
+        for summary in message.summary:
+            summaries.append({
+                "type": "summary_text",
+                "text": summary.text
+            })
+        state_updates["session_messages"].append({
+            "type": "reasoning",
+            "summary": summaries
+        })
+    
     if llm_response.output_text:
         state_updates["session_messages"].append({
             "role": "assistant",
             "content": llm_response.output_text
         })
+
+    tool_calls = []
+    for message in llm_response.output:
+        if message.type != "function_call":
+            continue
+        tool_calls.append({
+            "tool_call_id": message.call_id,
+            "tool_name": message.name,
+            "tool_args": json.loads(message.arguments)
+        })
+        state_updates["session_messages"].append({
+            "type": "function_call",
+            "call_id": message.call_id,
+            "name": message.name,
+            "arguments": message.arguments
+        })
+
+    if tool_calls:
+        state_updates["tool_registry"] = agent_tool_registry
+        state_updates["tool_calls"] = tool_calls
+    else:
+        state_updates["tool_registry"] = {}
+        state_updates["tool_calls"] = []
+        state_updates["tool_results"] = []
+
+    logger.info("Exiting main agent node")
+    return state_updates
+
     # if llm_response.tools:
     #     state_updates["tool_registry"] = agent_tool_registry
     #     state_updates["tool_calls"] = [
