@@ -91,15 +91,6 @@ async def generic_sub_agent(state: GenericSubAgentState):
         "skill_registry": generic_sub_agent_skill_registry.SKILL_REGISTRY
     }
     state_updates["agent_calls"] = state.get("agent_calls", 0) + 1
-    # if llm_response:
-    #     state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.prompt_eval_count
-    #     state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.eval_count
-    #     state_updates["session_current_token_count"] = llm_response.prompt_eval_count + llm_response.eval_count
-    # if llm_response.message.content:
-    #     state_updates["session_messages"].append({
-    #         "role": "assistant",
-    #         "content": llm_response.message.content
-    #     })
     if llm_response:
         state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.usage.input_tokens
         state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.usage.output_tokens
@@ -151,6 +142,15 @@ async def generic_sub_agent(state: GenericSubAgentState):
 
     logger.info("Exiting main agent node")
     return state_updates
+    # if llm_response:
+    #     state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.prompt_eval_count
+    #     state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.eval_count
+    #     state_updates["session_current_token_count"] = llm_response.prompt_eval_count + llm_response.eval_count
+    # if llm_response.message.content:
+    #     state_updates["session_messages"].append({
+    #         "role": "assistant",
+    #         "content": llm_response.message.content
+    #     })
     # if llm_response.message.tool_calls:
     #     state_updates["tool_registry"] = agent_tool_registry
     #     state_updates["tool_calls"] = [

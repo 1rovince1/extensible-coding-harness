@@ -176,6 +176,10 @@ async def main_agent(state: MainAgentState):
     logger.info("Exiting main agent node")
     return state_updates
 
+    # if llm_response:
+    #     state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.prompt_eval_count
+    #     state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.eval_count
+    #     state_updates["session_current_token_count"] = llm_response.prompt_eval_count + llm_response.eval_count
     # if llm_response.tools:
     #     state_updates["tool_registry"] = agent_tool_registry
     #     state_updates["tool_calls"] = [
