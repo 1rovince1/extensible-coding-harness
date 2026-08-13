@@ -1,8 +1,11 @@
 import logging
+from typing import Literal
 
 from ollama import ChatResponse
+from openai.types.responses.response import Response
 
 from clients.ollama_llm_client import ollama_manager
+from clients.openai_llm_client import openai_manager
 # from langchain_ollama import ChatOllama
 from helpers.retry_utils import retry_with_backoff_async
 
@@ -14,8 +17,49 @@ logger = logging.getLogger(__name__)
         retry_multiplier=5,
         exceptions_to_retry=[TimeoutError]
 )
+async def call_openai_llm(
+    messages: list[dict[str, str]],
+    model: str,
+    think: Literal[
+        "high",
+        "medium",
+        "low",
+        "xhigh",
+        "none",
+        "minimal",
+        "max"
+    ] = "none",
+    tools: list[dict[str, str]] | None = None
+) -> Response:
+    logger.info("Calling llm via openai client...")
+
+    logger.debug(f"Input messages: {messages}")
+    llm_response = await openai_manager.client.responses.create(
+        model=model,
+        input=messages,
+        reasoning={
+            "effort": think
+        },
+        tools=tools
+    )
+
+    logger.info(f"Raw LLM response: {llm_response}")
+    logger.info(
+        "Token usage:\n"
+        f"Input tokens: {llm_response.usage.input_tokens}\n"
+        f"Output tokens: {llm_response.usage.output_tokens}"
+    )
+
+    return llm_response
+
+
+@retry_with_backoff_async(
+        retry_count=5, 
+        retry_multiplier=5,
+        exceptions_to_retry=[TimeoutError]
+)
 async def call_llm(
-        messages: list[str],
+        messages: list[dict[str, str]],
         model: str,
         think: bool = False,
         tools: list[dict[str, str]] | None = None
