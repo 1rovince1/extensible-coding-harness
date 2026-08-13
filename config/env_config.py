@@ -4,6 +4,10 @@ class EnvSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
     OPENAI_COMPATIBLE_LLM_HOST_URL: str = "https://ollama.com"
+    OPENAI_COMPATIBLE_LLM_API_KEY: str
+    OPENAI_COMPATIBLE_MAIN_AGENT_LLM: str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+    OPENAI_COMPATIBLE_GENERIC_SUB_AGENT_LLM: str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+    OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM: str = "gpt-oss:120b-cloud"
 
     OLLAMA_HOST: str = "https://ollama.com"
     OLLAMA_API_KEY: str

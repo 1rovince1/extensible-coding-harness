@@ -15,7 +15,7 @@ class OpenAIClient:
         logger.info("Connecting to OpenAI client...")
         self.client = AsyncClient(
             base_url=env_settings.OPENAI_COMPATIBLE_LLM_HOST_URL,
-            api_key=env_settings.OLLAMA_API_KEY
+            api_key=env_settings.OPENAI_COMPATIBLE_LLM_API_KEY
         )
         logger.info("Connected to OpenAI client!")
 

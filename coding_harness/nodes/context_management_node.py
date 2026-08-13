@@ -70,7 +70,8 @@ async def context_manager(state: MainAgentState | GenericSubAgentState):
         ]
         llm_response = await call_llm(
             messages=messages,
-            model=env_settings.OLLAMA_CONTEXT_COMPRESSION_MODEL
+            # model=env_settings.OLLAMA_CONTEXT_COMPRESSION_MODEL
+            model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
         )
         updated_session_messages = [{
             "role": "user",

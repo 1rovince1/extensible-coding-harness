@@ -113,7 +113,8 @@ async def main_agent(state: MainAgentState):
     # )
     llm_response: Response = await call_openai_llm(
         messages=messages,
-        model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
+        # model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
+        model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
         tools=agent_tools,
         think="medium"
     )
