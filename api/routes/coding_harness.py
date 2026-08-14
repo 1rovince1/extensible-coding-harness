@@ -38,7 +38,7 @@ async def request_to_agent(request: ChatRequest):
             session_id=request.session_id
         ):
             print(chunk)
-            yield chunk
+            yield chunk["data"]
         
     except Exception as e:
         logger.error("Error while processing request", exc_info=True)

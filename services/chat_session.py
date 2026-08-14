@@ -54,24 +54,36 @@ async def process_user_request_streaming(
         "content": user_query
     })
 
+    # graph_config = {
+    #     "configurable": {
+    #         "thread_id": str(session_key)
+    #     }
+    # }
+
     # resultant_state = await compiled_harness.ainvoke(session_state)
     async for event in compiled_harness.astream(
         session_state,
-        stream_mode="custom",
+        # config=graph_config,
+        stream_mode=["custom", "values"],
         version="v2"
     ):
         if event["type"] == "custom":
-            print(event)
+            # print(event)
             yield event
-    # logger.info(f"User request processing result: {resultant_state}")
+        elif event["type"] == "values":
+            resultant_state = event["data"]
 
-    # resultant_state["updated_at"] = int(time.time())
+    # resultant_state = await compiled_harness.aget_state(config=graph_config)
+    # print("\n\nRESULTANT_STATE", resultant_state)
+    logger.info(f"User request processing result: {resultant_state}")
 
-    # await redis_manager.client.set(
-    #     name=session_key,
-    #     value=json.dumps(resultant_state),
-    #     ex=env_settings.CHAT_SESSION_EXPIRATION_TIME
-    # )
+    resultant_state["updated_at"] = int(time.time())
+
+    await redis_manager.client.set(
+        name=session_key,
+        value=json.dumps(resultant_state),
+        ex=env_settings.CHAT_SESSION_EXPIRATION_TIME
+    )
 
     # return resultant_state["session_messages"][-1]["content"]
 

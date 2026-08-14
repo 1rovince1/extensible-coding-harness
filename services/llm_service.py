@@ -94,7 +94,7 @@ async def call_openai_llm_with_stream(
     # )
 
     async for event in llm_response:
-        print(event)
+        # print(event)
         # if event.type == "response.reasoning_summary_text.delta":
         #     # print(f"Thinking: {event.delta}", end="")
         #     print(event.delta, end="", flush=True)

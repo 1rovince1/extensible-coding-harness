@@ -235,15 +235,33 @@ async def main_agent(state: MainAgentState):
     #     think=True
     # )
     stream_writer = get_stream_writer()
-    # llm_stream_event: Response = call_openai_llm_with_stream(
+    llm_stream_event: Response = call_openai_llm_with_stream(
+        messages=messages,
+        # model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
+        model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
+        tools=agent_tools,
+        think="medium"
+    )
+
+    async for event in llm_stream_event:
+        # print(event)
+        if event.type == "response.reasoning_summary_text.delta":
+            # print(f"Thinking: {event.delta}", end="")
+            # print(event.delta, end="", flush=True)
+            stream_writer({"thinking_chunk": event.delta})
+        if event.type == "response.output_text.delta":
+            # print(event.delta, end="", flush=True)
+            stream_writer({"response_chunk": event.delta})
+        if event.type == "response.completed":
+            llm_response = event.response
+
+    # async for event in call_openai_llm_with_stream(
     #     messages=messages,
     #     # model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
     #     model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
     #     tools=agent_tools,
     #     think="medium"
-    # )
-
-    # async for event in llm_stream_event:
+    # ):
     #     if event.type == "response.reasoning_summary_text.delta":
     #         # print(f"Thinking: {event.delta}", end="")
     #         # print(llm_stream_event.delta, end="", flush=True)
@@ -252,78 +270,63 @@ async def main_agent(state: MainAgentState):
     #         # print(llm_stream_event.delta, end="", flush=True)
     #         stream_writer({"respsonse_chunk": event.delta})
 
-    async for event in call_openai_llm_with_stream(
-        messages=messages,
-        # model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
-        model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
-        tools=agent_tools,
-        think="medium"
-    ):
-        if event.type == "response.reasoning_summary_text.delta":
-            # print(f"Thinking: {event.delta}", end="")
-            # print(llm_stream_event.delta, end="", flush=True)
-            stream_writer({"thinking_chunk": event.delta})
-        if event.type == "response.output_text.delta":
-            # print(llm_stream_event.delta, end="", flush=True)
-            stream_writer({"respsonse_chunk": event.delta})
+    state_updates = {
+        # "session_messages": []
+        "session_messages": state.get("session_messages", []),
+        "skill_registry": main_agent_skill_registry.SKILL_REGISTRY
+    }
+    state_updates["agent_calls"] = state.get("agent_calls", 0) + 1
+    if llm_response:
+        state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.usage.input_tokens
+        state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.usage.output_tokens
+        state_updates["session_current_token_count"] = llm_response.usage.input_tokens + llm_response.usage.output_tokens
 
-    # state_updates = {
-    #     # "session_messages": []
-    #     "session_messages": state.get("session_messages", []),
-    #     "skill_registry": main_agent_skill_registry.SKILL_REGISTRY
-    # }
-    # state_updates["agent_calls"] = state.get("agent_calls", 0) + 1
-    # if llm_response:
-    #     state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.usage.input_tokens
-    #     state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.usage.output_tokens
-    #     state_updates["session_current_token_count"] = llm_response.usage.input_tokens + llm_response.usage.output_tokens
-
-    # for message in llm_response.output:
-    #     if message.type != "reasoning":
-    #         continue
-    #     summaries = []
-    #     for summary in message.summary:
-    #         summaries.append({
-    #             "type": "summary_text",
-    #             "text": summary.text
-    #         })
-    #     state_updates["session_messages"].append({
-    #         "type": "reasoning",
-    #         "summary": summaries
-    #     })
+    for message in llm_response.output:
+        if message.type != "reasoning":
+            continue
+        summaries = []
+        for summary in message.summary:
+            summaries.append({
+                "type": "summary_text",
+                "text": summary.text
+            })
+        state_updates["session_messages"].append({
+            "type": "reasoning",
+            "summary": summaries
+        })
     
-    # if llm_response.output_text:
-    #     state_updates["session_messages"].append({
-    #         "role": "assistant",
-    #         "content": llm_response.output_text
-    #     })
+    if llm_response.output_text:
+        state_updates["session_messages"].append({
+            "role": "assistant",
+            "content": llm_response.output_text
+        })
 
-    # tool_calls = []
-    # for message in llm_response.output:
-    #     if message.type != "function_call":
-    #         continue
-    #     tool_calls.append({
-    #         "tool_call_id": message.call_id,
-    #         "tool_name": message.name,
-    #         "tool_args": json.loads(message.arguments)
-    #     })
-    #     state_updates["session_messages"].append({
-    #         "type": "function_call",
-    #         "call_id": message.call_id,
-    #         "name": message.name,
-    #         "arguments": message.arguments
-    #     })
+    tool_calls = []
+    for message in llm_response.output:
+        if message.type != "function_call":
+            continue
+        tool_calls.append({
+            "tool_call_id": message.call_id,
+            "tool_name": message.name,
+            "tool_args": json.loads(message.arguments)
+        })
+        state_updates["session_messages"].append({
+            "type": "function_call",
+            "call_id": message.call_id,
+            "name": message.name,
+            "arguments": message.arguments
+        })
 
-    # if tool_calls:
-    #     state_updates["tool_registry"] = agent_tool_registry
-    #     state_updates["tool_calls"] = tool_calls
-    # else:
-    #     state_updates["tool_registry"] = {}
-    #     state_updates["tool_calls"] = []
-    #     state_updates["tool_results"] = []
+    if tool_calls:
+        state_updates["tool_registry"] = agent_tool_registry
+        state_updates["tool_calls"] = tool_calls
+    else:
+        state_updates["tool_registry"] = {}
+        state_updates["tool_calls"] = []
+        state_updates["tool_results"] = []
 
-    # logger.info("Exiting main agent node")
-    # return state_updates
+    logger.info("Exiting main agent node")
+    return state_updates
 
     # if llm_response:
     #     state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.prompt_eval_count

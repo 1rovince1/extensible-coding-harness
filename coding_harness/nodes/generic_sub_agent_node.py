@@ -83,7 +83,7 @@ async def generic_sub_agent(state: GenericSubAgentState):
         # model=env_settings.OLLAMA_SUB_AGENT_MODEL,
         model=env_settings.OPENAI_COMPATIBLE_GENERIC_SUB_AGENT_LLM,
         tools=agent_tools,
-        think=True
+        think="medium"
     )
     
     state_updates = {

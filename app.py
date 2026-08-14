@@ -79,7 +79,9 @@
 
 import streamlit as st
 import requests
+import httpx
 import uuid
+import json
 
 SERVER_URL = "http://localhost:8008"
 
@@ -111,6 +113,28 @@ if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
     st.session_state.messages = []
 
+def stream_sse_response(payload):
+    api_url = f"{SERVER_URL}/request_agent/stream"
+    with httpx.Client() as client:
+        with client.stream("POST", api_url, json=payload, timeout=60.0) as response:
+            for line in response.iter_lines():
+                if not line:
+                    continue
+                if line.startswith("data"):
+                    data_content = line[6:]
+                    if data_content == "[DONE]":
+                        break
+                    try:
+                        chunk_json = json.loads(data_content)
+                        print(chunk_json)
+                        yield(chunk_json)
+                        # token = chunk_json.get("thinking_chunk", "") or chunk_json.get("response_chunk", "")
+                        # if token:
+                        #     yield token
+                    except Exception as e:
+                        # st.error(e)
+                        yield data_content
+
 # 4. Sidebar selection with on_change callback
 with st.sidebar:
     st.selectbox(
@@ -123,8 +147,18 @@ with st.sidebar:
 
 # 5. Render chat history from st.session_state
 for message in st.session_state.messages:
-    if (message["role"] == "user" or message["role"] == "assistant") and message.get("content", None):
-        with st.chat_message(message["role"]):
+    # if (message["role"] == "user" or message["role"] == "assistant") and message.get("content", None):
+    #     with st.chat_message(message["role"]):
+    #         st.markdown(message["content"])
+
+    with st.chat_message(message["role"]):
+        if message["role"] == "assistant":
+            thoughts = message.get("thoughts", "")
+            if thoughts:
+                with st.expander("Thoughts", expanded=False):
+                    st.markdown(thoughts)
+            st.markdown(message["content"])
+        else:
             st.markdown(message["content"])
 
 # 6. Chat Input Logic
@@ -137,22 +171,73 @@ if prompt := st.chat_input():
     # Call backend agent
     with st.spinner("Working..."):
         try:
-            res = requests.post(
-                url=f"{SERVER_URL}/request_agent",
-                json={
-                    "session_id": st.session_state.session_id,
-                    "user_query": prompt
-                },
-                # timeout=30
-            )
-            res.raise_for_status()
-            parsed_response = res.json()
-            ai_reply = parsed_response.get("ai_response", "")
-
+            # res = requests.post(
+            #     url=f"{SERVER_URL}/request_agent",
+            #     json={
+            #         "session_id": st.session_state.session_id,
+            #         "user_query": prompt
+            #     },
+            #     # timeout=30
+            # )
+            # res.raise_for_status()
+            # parsed_response = res.json()
+            # ai_reply = parsed_response.get("ai_response", "")
+            
             # Render and store assistant response
+            # with st.chat_message("assistant"):
+            #     st.markdown(ai_reply)
+            # st.session_state.messages.append({"role": "assistant", "content": ai_reply})
+
+            json_payload={
+                "session_id": st.session_state.session_id,
+                "user_query": prompt
+            }
+            # with st.chat_message("assistant"):
+            #     # ai_response = st.write_stream(stream_sse_response(json_payload))
+            #     raw_token_stream = stream_sse_response(json_payload)
+
+            #     def thinking_generator():
+            #         for token in raw_token_stream:
+            #             if token.get("thinking_chunk"):
+            #                 yield token.get("thinking_chunk", "")
+            #             else:
+            #                 break
+
+            #     def response_generator():
+            #         for token in raw_token_stream:
+            #             if token.get("response_chunk"):
+            #                 yield token.get("response_chunk", "")
+            #             else:
+            #                 break
+
+            #     with st.expander("Thinking...") as thinking_box:
+            #         thinking_response = st.write_stream(thinking_generator)
+            #     ai_response = st.write_stream(response_generator)
+            # st.session_state.messages.append({"role": "assistant", "content": ai_response})
             with st.chat_message("assistant"):
-                st.markdown(ai_reply)
-            st.session_state.messages.append({"role": "assistant", "content": ai_reply})
+                with st.expander("Thinking...", expanded=True):
+                    thinking_placeholder = st.empty()
+                response_placeholder = st.empty()
+
+                thinking_text = ""
+                response_text = ""
+
+                for token in stream_sse_response(json_payload):
+
+                    if chunk := token.get("thinking_chunk"):
+                        thinking_text += chunk
+                        thinking_placeholder.markdown(thinking_text)
+                    if chunk := token.get("response_chunk"):
+                        response_text += chunk
+                        response_placeholder.markdown(response_text)
+
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "thoughts": thinking_text,
+                    "content": response_text 
+                })
+
+
 
         except Exception as e:
             st.error(f"Error communicating with agent: {e}")
