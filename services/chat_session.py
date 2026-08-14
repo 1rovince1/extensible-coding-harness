@@ -57,9 +57,12 @@ async def process_user_request_streaming(
     # resultant_state = await compiled_harness.ainvoke(session_state)
     async for event in compiled_harness.astream(
         session_state,
-        stream_mode="messages"
+        stream_mode="custom",
+        version="v2"
     ):
-        print(event)
+        if event["type"] == "custom":
+            print(event)
+            yield event
     # logger.info(f"User request processing result: {resultant_state}")
 
     # resultant_state["updated_at"] = int(time.time())
