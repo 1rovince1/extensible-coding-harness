@@ -39,6 +39,40 @@ async def process_user_request(
     return resultant_state["session_messages"][-1]["content"]
 
 
+async def process_user_request_streaming(
+        user_query: str,
+        session_id: UUID
+):
+    logger.info(f"Processing user request (session-{session_id}): {user_query}")
+
+    session_key = f"session-{session_id}"
+    redis_session = await redis_manager.client.get(name=session_key)
+    session_state = json.loads(redis_session) if redis_session else {"session_messages": []}
+
+    session_state["session_messages"].append({
+        "role": "user",
+        "content": user_query
+    })
+
+    # resultant_state = await compiled_harness.ainvoke(session_state)
+    async for event in compiled_harness.astream(
+        session_state,
+        stream_mode="messages"
+    ):
+        print(event)
+    # logger.info(f"User request processing result: {resultant_state}")
+
+    # resultant_state["updated_at"] = int(time.time())
+
+    # await redis_manager.client.set(
+    #     name=session_key,
+    #     value=json.dumps(resultant_state),
+    #     ex=env_settings.CHAT_SESSION_EXPIRATION_TIME
+    # )
+
+    # return resultant_state["session_messages"][-1]["content"]
+
+
 async def get_all_active_sessions():
     session_key_pattern = "session-*"
 
