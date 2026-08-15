@@ -20,7 +20,8 @@ async def request_to_agent(request: ChatRequest):
         )
         return ChatResponse(
             session_id=request.session_id,
-            ai_response=result
+            # ai_response=result
+            new_messages=result
         )
     except Exception as e:
         logger.error("Error while processing request", exc_info=True)

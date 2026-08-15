@@ -129,7 +129,7 @@ agent_tools = build_openai_tools(agent_tool_registry)
 #     if llm_response:
 #         state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.usage.input_tokens
 #         state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.usage.output_tokens
-#         state_updates["session_current_token_count"] = llm_response.usage.input_tokens + llm_response.usage.output_tokens
+#         state_updates["session_context_current_token_count"] = llm_response.usage.input_tokens + llm_response.usage.output_tokens
 
 #     for message in llm_response.output:
 #         if message.type != "reasoning":
@@ -181,7 +181,7 @@ agent_tools = build_openai_tools(agent_tool_registry)
 #     # if llm_response:
 #     #     state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.prompt_eval_count
 #     #     state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.eval_count
-#     #     state_updates["session_current_token_count"] = llm_response.prompt_eval_count + llm_response.eval_count
+#     #     state_updates["session_context_current_token_count"] = llm_response.prompt_eval_count + llm_response.eval_count
 #     # if llm_response.tools:
 #     #     state_updates["tool_registry"] = agent_tool_registry
 #     #     state_updates["tool_calls"] = [
@@ -226,7 +226,7 @@ async def main_agent(state: MainAgentState):
         "role": "system",
         "content": prompt.strip()
     }]
-    messages.extend(state.get("session_messages", []))
+    messages.extend(state.get("session_context_messages", []))
 
     if not state.get("stream_mode", False):
         llm_response: Response = await call_openai_llm(
@@ -256,17 +256,9 @@ async def main_agent(state: MainAgentState):
             if event.type == "response.completed":
                 llm_response = event.response
 
-    state_updates = {
-        # "session_messages": []
-        "session_messages": state.get("session_messages", []),
-        "skill_registry": main_agent_skill_registry.SKILL_REGISTRY
-    }
-    state_updates["agent_calls"] = state.get("agent_calls", 0) + 1
-    if llm_response:
-        state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.usage.input_tokens
-        state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.usage.output_tokens
-        state_updates["session_current_token_count"] = llm_response.usage.input_tokens + llm_response.usage.output_tokens
 
+    # State management
+    turn_messages = []
     for message in llm_response.output:
         if message.type != "reasoning":
             continue
@@ -276,14 +268,13 @@ async def main_agent(state: MainAgentState):
                 "type": "summary_text",
                 "text": summary.text
             })
-        state_updates["session_messages"].append({
-            # "role": "assistant",
+        turn_messages.append({
             "type": "reasoning",
             "summary": summaries
         })
-    
+
     if llm_response.output_text:
-        state_updates["session_messages"].append({
+        turn_messages.append({
             "role": "assistant",
             "content": llm_response.output_text
         })
@@ -297,28 +288,92 @@ async def main_agent(state: MainAgentState):
             "tool_name": message.name,
             "tool_args": json.loads(message.arguments)
         })
-        state_updates["session_messages"].append({
+        turn_messages.append({
             "type": "function_call",
             "call_id": message.call_id,
             "name": message.name,
             "arguments": message.arguments
         })
 
-    if tool_calls:
-        state_updates["tool_registry"] = agent_tool_registry
-        state_updates["tool_calls"] = tool_calls
-    else:
-        state_updates["tool_registry"] = {}
-        state_updates["tool_calls"] = []
-        state_updates["tool_results"] = []
-
     logger.info("Exiting main agent node")
-    return state_updates
+    return {
+        "session_messages": state.get("session_messages", []) + turn_messages,
+        "session_context_messages": state.get("session_context_messages", []) + turn_messages,
+
+        "agent_calls": state.get("agent_calls", 0) + 1,
+        "session_input_tokens": state.get("session_input_tokens", 0) + llm_response.usage.input_tokens,
+        "session_output_tokens": state.get("session_output_tokens", 0) + llm_response.usage.output_tokens,
+        "session_context_current_token_count": llm_response.usage.input_tokens + llm_response.usage.output_tokens,
+        
+        "skill_registry": main_agent_skill_registry.SKILL_REGISTRY if tool_calls else {},
+        "tool_registry": agent_tool_registry if tool_calls else {},
+        "tool_calls": tool_calls if tool_calls else [],
+        "tool_results": []
+    }
+
+    # state_updates = {
+    #     # "session_messages": []
+    #     "session_messages": state.get("session_messages", []),
+    #     "skill_registry": main_agent_skill_registry.SKILL_REGISTRY
+    # }
+    # state_updates["agent_calls"] = state.get("agent_calls", 0) + 1
+    # if llm_response:
+    #     state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.usage.input_tokens
+    #     state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.usage.output_tokens
+    #     state_updates["session_context_current_token_count"] = llm_response.usage.input_tokens + llm_response.usage.output_tokens
+
+    # for message in llm_response.output:
+    #     if message.type != "reasoning":
+    #         continue
+    #     summaries = []
+    #     for summary in message.summary:
+    #         summaries.append({
+    #             "type": "summary_text",
+    #             "text": summary.text
+    #         })
+    #     state_updates["session_messages"].append({
+    #         # "role": "assistant",
+    #         "type": "reasoning",
+    #         "summary": summaries
+    #     })
+    
+    # if llm_response.output_text:
+    #     state_updates["session_messages"].append({
+    #         "role": "assistant",
+    #         "content": llm_response.output_text
+    #     })
+
+    # tool_calls = []
+    # for message in llm_response.output:
+    #     if message.type != "function_call":
+    #         continue
+    #     tool_calls.append({
+    #         "tool_call_id": message.call_id,
+    #         "tool_name": message.name,
+    #         "tool_args": json.loads(message.arguments)
+    #     })
+    #     state_updates["session_messages"].append({
+    #         "type": "function_call",
+    #         "call_id": message.call_id,
+    #         "name": message.name,
+    #         "arguments": message.arguments
+    #     })
+
+    # if tool_calls:
+    #     state_updates["tool_registry"] = agent_tool_registry
+    #     state_updates["tool_calls"] = tool_calls
+    # else:
+    #     state_updates["tool_registry"] = {}
+    #     state_updates["tool_calls"] = []
+    #     state_updates["tool_results"] = []
+
+    # logger.info("Exiting main agent node")
+    # return state_updates
 
     # if llm_response:
     #     state_updates["session_input_tokens"] = state.get("session_input_tokens", 0) + llm_response.prompt_eval_count
     #     state_updates["session_output_tokens"] = state.get("session_output_tokens", 0) + llm_response.eval_count
-    #     state_updates["session_current_token_count"] = llm_response.prompt_eval_count + llm_response.eval_count
+    #     state_updates["session_context_current_token_count"] = llm_response.prompt_eval_count + llm_response.eval_count
     # if llm_response.tools:
     #     state_updates["tool_registry"] = agent_tool_registry
     #     state_updates["tool_calls"] = [

@@ -18,12 +18,17 @@ async def process_user_request(
 
     session_key = f"session-{session_id}"
     redis_session = await redis_manager.client.get(name=session_key)
-    session_state = json.loads(redis_session) if redis_session else {"session_messages": []}
+    session_state = json.loads(redis_session) if redis_session else {
+        "session_messages": [],
+        "session_context_messages": []
+    }
 
-    session_state["session_messages"].append({
+    user_query_message = {
         "role": "user",
         "content": user_query
-    })
+    }
+    session_state["session_messages"].append(user_query_message)
+    session_state["session_context_messages"].append(user_query_message)
     session_state["stream_mode"] = False
 
     resultant_state = await compiled_harness.ainvoke(session_state)
@@ -37,7 +42,11 @@ async def process_user_request(
         ex=env_settings.CHAT_SESSION_EXPIRATION_TIME
     )
 
-    return resultant_state["session_messages"][-1]["content"]
+    new_messages_start_index = len(session_state["session_messages"])
+    new_messages = resultant_state["session_messages"][new_messages_start_index:]
+
+    # return resultant_state["session_messages"][-1]["content"]
+    return new_messages
 
 
 async def process_user_request_streaming(
@@ -48,12 +57,17 @@ async def process_user_request_streaming(
 
     session_key = f"session-{session_id}"
     redis_session = await redis_manager.client.get(name=session_key)
-    session_state = json.loads(redis_session) if redis_session else {"session_messages": []}
+    session_state = json.loads(redis_session) if redis_session else {
+        "session_messages": [],
+        "session_context_messages": []
+    }
 
-    session_state["session_messages"].append({
+    user_query_message = {
         "role": "user",
         "content": user_query
-    })
+    }
+    session_state["session_messages"].append(user_query_message)
+    session_state["session_context_messages"].append(user_query_message)
     session_state["stream_mode"] = True
 
     # graph_config = {

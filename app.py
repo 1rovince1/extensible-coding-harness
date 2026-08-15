@@ -233,26 +233,32 @@ with st.sidebar:
         value=True
     )
 
-# 5. Render chat history from st.session_state
-for message in st.session_state.messages:
-    # if (message["role"] == "user" or message["role"] == "assistant") and message.get("content", None):
-    #     with st.chat_message(message["role"]):
-    #         st.markdown(message["content"])
 
-    if message.get("type") == "reasoning" or message.get("role") == "assistant":
-        with st.chat_message("assistant"):
-            if message.get("type") == "reasoning":
-                thoughts = "\n\n".join(summary["text"] for summary in message.get("summary", []))
-                if thoughts:
-                    with st.expander("Thoughts", expanded=False):
-                        st.markdown(thoughts)
+def render_session_messages(messages: list):
+    for message in messages:
+        if message.get("type") == "reasoning" or message.get("role") == "assistant":
+            with st.chat_message("assistant"):
+                if message.get("type") == "reasoning":
+                    thoughts = "\n\n".join(summary["text"] for summary in message.get("summary", []))
+                    if thoughts:
+                        with st.expander("Thoughts", expanded=False):
+                            st.markdown(thoughts)
 
-            elif message.get("role") == "assistant":
+                elif message.get("role") == "assistant":
+                    st.markdown(message["content"])
+
+        elif message.get("role") == "user":
+            with st.chat_message("user"):
                 st.markdown(message["content"])
 
-    elif message.get("role") == "user":
-        with st.chat_message("user"):
-            st.markdown(message["content"])
+
+# 5. Render chat history from st.session_state
+render_session_messages(st.session_state.messages)
+# for message in st.session_state.messages:
+#     # if (message["role"] == "user" or message["role"] == "assistant") and message.get("content", None):
+#     #     with st.chat_message(message["role"]):
+#     #         st.markdown(message["content"])
+
 
 
 # 6. Chat Input Logic
@@ -278,12 +284,15 @@ if prompt := st.chat_input():
                 )
                 res.raise_for_status()
                 parsed_response = res.json()
-                ai_reply = parsed_response.get("ai_response", "")
+                # ai_reply = parsed_response.get("ai_response", "")
                 
-                # Render and store assistant response
-                with st.chat_message("assistant"):
-                    st.markdown(ai_reply)
-                st.session_state.messages.append({"role": "assistant", "content": ai_reply})
+                # # Render and store assistant response
+                # with st.chat_message("assistant"):
+                #     st.markdown(ai_reply)
+                # st.session_state.messages.append({"role": "assistant", "content": ai_reply})
+                new_messages = parsed_response.get("new_messages", [])
+                render_session_messages(new_messages)
+                st.session_state.messages.extend(new_messages)
 
             else:
                 # with st.chat_message("assistant"):

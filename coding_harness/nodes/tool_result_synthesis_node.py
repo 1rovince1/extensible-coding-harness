@@ -19,7 +19,7 @@ async def tool_result_synthesizer(state: MainAgentState):
     skill_results = state.get("skill_results", [])
 
     sub_agent_responses = [
-        sub_agent_result["session_messages"][-1]["content"]
+        sub_agent_result["session_context_messages"][-1]["content"]
         for sub_agent_result in sub_agent_results
     ]
 
@@ -48,5 +48,11 @@ async def tool_result_synthesizer(state: MainAgentState):
     logger.info("Exiting tool synthesizer node")
     return{
         "tool_calls": tool_calls,
-        "tool_results": tool_results
+        "tool_results": tool_results,
+        "function_calls": [],
+        "function_results": [],
+        "sub_agent_calls": [],
+        "sub_agent_results": [],
+        "skill_calls": [],
+        "skill_results": []
     }
