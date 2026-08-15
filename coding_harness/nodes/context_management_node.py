@@ -2,7 +2,7 @@ import logging
 
 from langsmith import traceable
 
-from services.llm_service import call_llm
+from services.llm_service import call_llm, call_openai_llm
 from coding_harness.states import MainAgentState, GenericSubAgentState
 from config.env_config import env_settings
 
@@ -69,9 +69,12 @@ async def context_manager(state: MainAgentState | GenericSubAgentState):
                 "content": f"Context to compress:\n{messages_to_compress}"
             }
         ]
-        llm_response = await call_llm(
+        # llm_response = await call_llm(
+        #     messages=messages,
+        #     model=env_settings.OLLAMA_CONTEXT_COMPRESSION_MODEL
+        # )
+        llm_response = await call_openai_llm(
             messages=messages,
-            # model=env_settings.OLLAMA_CONTEXT_COMPRESSION_MODEL
             model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
         )
         compressed_context_messages = [{

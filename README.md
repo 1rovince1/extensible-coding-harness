@@ -5,11 +5,12 @@ LangGraph graph:
 ## Done:
 - skills' integration
 - provider agnosticism (integrated openai library - supported by multiple providers)
+- streaming response to user - in progress (separation in streaming thoughts and streaming of context-compression/sub-agents remains if desired)
 
 ### TODO:
-- streaming response to user
 - circular import (task_delegation and sub_agent nodes) resolution once and for all
 - git integration in agentic workflow
 - proper context setup (like claude.md or something)
 - edit file tool to perform changes in specific parts in file
 - langsmith -> langfuse
+- context limit auto updation based on model instead of env setting
