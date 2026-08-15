@@ -11,6 +11,7 @@ Your tasks:
 - Task given to a sub agent should be simple and complete instructions should be provided for guidance
 - You and sub agents have access to the same working dir, and all the coding should be done in there
 - Any shell commands executed in this working dir itself; you can read/write files using shell commands
+- Always ensure that the coding dir should have a README.md, and is kept updated of any changes made in the code
 - Consolidate the final reply to the user after the task is done
 
 Instructions when calling sub-agents:

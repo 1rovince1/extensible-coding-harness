@@ -73,21 +73,25 @@ with st.sidebar:
 
 def create_stream_ui(stream_name: str):
     if stream_name == "main_agent_reasoning":
-        expander = st.expander("Thoughts", expanded=True)
-        with expander:
-            placeholder = st.empty()
+        with st.chat_message("assistant"):
+            expander = st.expander("Thoughts", expanded=True)
+            with expander:
+                placeholder = st.empty()
         return placeholder
     elif stream_name == "main_agent_response":
-        return st.empty()
+        with st.chat_message("assistant"):
+            return st.empty()
     elif stream_name == "context_compression_reasoning":
-        expander = st.expander("Context compression thoughts", expanded=False)
-        with expander:
-            placeholder = st.empty()
+        with st.chat_message("assistant"):
+            expander = st.expander("Context compression thoughts", expanded=False)
+            with expander:
+                placeholder = st.empty()
         return placeholder
     elif stream_name == "context_compression_response":
-        expander = st.expander("Context compression response", expanded=False)
-        with expander:
-            placeholder = st.empty()
+        with st.chat_message("assistant"):
+            expander = st.expander("Context compression response", expanded=False)
+            with expander:
+                placeholder = st.empty()
         return placeholder
 
 def finalize_stream(stream_name: str, content: str):
@@ -189,30 +193,30 @@ if prompt := st.chat_input():
                 #     ai_response = st.write_stream(response_generator)
                 # st.session_state.messages.append({"role": "assistant", "content": ai_response})
 
-                with st.chat_message("assistant"):
-                    current_stream = None
-                    current_text = ""
-                    current_placeholder = None
+                # with st.chat_message("assistant"):
+                current_stream = None
+                current_text = ""
+                current_placeholder = None
 
-                    for event in stream_sse_response(json_payload):
-                        if event["type"] == "chunk":
-                            stream = event["stream"]
-                            if current_stream != stream:
-                                current_stream = stream
-                                current_text = ""
-                                current_placeholder = create_stream_ui(stream) 
-
-                            current_text += event["content"]
-                            current_placeholder.markdown(current_text)
-
-                        elif event["type"] == "stream_break":
-                            finalize_stream(
-                                event["stream"],
-                                current_text
-                            )
-                            current_stream = None
+                for event in stream_sse_response(json_payload):
+                    if event["type"] == "chunk":
+                        stream = event["stream"]
+                        if current_stream != stream:
+                            current_stream = stream
                             current_text = ""
-                            current_placeholder = None
+                            current_placeholder = create_stream_ui(stream) 
+
+                        current_text += event["content"]
+                        current_placeholder.markdown(current_text)
+
+                    elif event["type"] == "stream_break":
+                        finalize_stream(
+                            event["stream"],
+                            current_text
+                        )
+                        current_stream = None
+                        current_text = ""
+                        current_placeholder = None
 
         except Exception as e:
             st.error(f"Error communicating with agent: {e}")
