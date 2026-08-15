@@ -5,6 +5,8 @@ from typing_extensions import TypedDict
 
 class MainAgentState(TypedDict):
     # session_messages: Annotated[list[dict[str, str]], operator.add]
+    stream_mode: bool
+    
     session_messages: list[dict[str, str]]
     agent_calls: int
     session_input_tokens: int

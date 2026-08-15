@@ -24,6 +24,7 @@ async def process_user_request(
         "role": "user",
         "content": user_query
     })
+    session_state["stream_mode"] = False
 
     resultant_state = await compiled_harness.ainvoke(session_state)
     logger.info(f"User request processing result: {resultant_state}")
@@ -53,6 +54,7 @@ async def process_user_request_streaming(
         "role": "user",
         "content": user_query
     })
+    session_state["stream_mode"] = True
 
     # graph_config = {
     #     "configurable": {

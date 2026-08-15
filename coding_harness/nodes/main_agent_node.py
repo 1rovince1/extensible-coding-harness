@@ -227,48 +227,34 @@ async def main_agent(state: MainAgentState):
         "content": prompt.strip()
     }]
     messages.extend(state.get("session_messages", []))
-    
-    # llm_response = await call_llm(
-    #     messages=messages,
-    #     model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
-    #     tools=agent_tools,
-    #     think=True
-    # )
-    stream_writer = get_stream_writer()
-    llm_stream_event: Response = call_openai_llm_with_stream(
-        messages=messages,
-        # model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
-        model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
-        tools=agent_tools,
-        think="medium"
-    )
 
-    async for event in llm_stream_event:
-        # print(event)
-        if event.type == "response.reasoning_summary_text.delta":
-            # print(f"Thinking: {event.delta}", end="")
-            # print(event.delta, end="", flush=True)
-            stream_writer({"thinking_chunk": event.delta})
-        if event.type == "response.output_text.delta":
-            # print(event.delta, end="", flush=True)
-            stream_writer({"response_chunk": event.delta})
-        if event.type == "response.completed":
-            llm_response = event.response
-
-    # async for event in call_openai_llm_with_stream(
-    #     messages=messages,
-    #     # model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
-    #     model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
-    #     tools=agent_tools,
-    #     think="medium"
-    # ):
-    #     if event.type == "response.reasoning_summary_text.delta":
-    #         # print(f"Thinking: {event.delta}", end="")
-    #         # print(llm_stream_event.delta, end="", flush=True)
-    #         stream_writer({"thinking_chunk": event.delta})
-    #     if event.type == "response.output_text.delta":
-    #         # print(llm_stream_event.delta, end="", flush=True)
-    #         stream_writer({"respsonse_chunk": event.delta})
+    if not state.get("stream_mode", False):
+        llm_response: Response = await call_openai_llm(
+            messages=messages,
+            model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
+            tools=agent_tools,
+            think="medium"
+        )
+    else:
+        stream_writer = get_stream_writer()
+        llm_stream_event = call_openai_llm_with_stream(
+            messages=messages,
+            # model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
+            model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
+            tools=agent_tools,
+            think="medium"
+        )
+        async for event in llm_stream_event:
+            # print(event)
+            if event.type == "response.reasoning_summary_text.delta":
+                # print(f"Thinking: {event.delta}", end="")
+                # print(event.delta, end="", flush=True)
+                stream_writer({"thinking_chunk": event.delta})
+            if event.type == "response.output_text.delta":
+                # print(event.delta, end="", flush=True)
+                stream_writer({"response_chunk": event.delta})
+            if event.type == "response.completed":
+                llm_response = event.response
 
     state_updates = {
         # "session_messages": []
@@ -291,6 +277,7 @@ async def main_agent(state: MainAgentState):
                 "text": summary.text
             })
         state_updates["session_messages"].append({
+            # "role": "assistant",
             "type": "reasoning",
             "summary": summaries
         })
