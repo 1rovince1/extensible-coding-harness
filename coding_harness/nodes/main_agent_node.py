@@ -65,7 +65,7 @@ async def main_agent(state: MainAgentState):
             think="medium"
         )
         async for chunk in llm_stream:
-            print(chunk)
+            # print(chunk)
             if chunk.type == "response.reasoning_summary_text.delta":
                 # print(f"Thinking: {chunk.delta}", end="")
                 # print(chunk.delta, end="", flush=True)

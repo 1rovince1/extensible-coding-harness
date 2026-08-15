@@ -76,7 +76,7 @@ async def context_manager(state: MainAgentState | GenericSubAgentState):
                 model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
             )
             async for chunk in llm_stream:
-                print(chunk)
+                # print(chunk)
                 if chunk.type == "response.reasoning_summary_text.delta":
                     stream_writer(create_stream_event("chunk", "context_compression_reasoning", chunk.delta))
                 if chunk.type == "response.reasoning_summary_text.done":

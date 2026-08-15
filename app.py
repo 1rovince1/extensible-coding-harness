@@ -47,7 +47,7 @@ def stream_sse_response(payload):
                     #     break
                     try:
                         chunk_json = json.loads(data_content)
-                        print(chunk_json)
+                        # print(chunk_json)
                         yield(chunk_json)
                         # token = chunk_json.get("thinking_chunk", "") or chunk_json.get("response_chunk", "")
                         # if token:

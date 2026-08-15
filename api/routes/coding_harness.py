@@ -38,7 +38,7 @@ async def request_to_agent(request: ChatRequest):
             user_query=request.user_query,
             session_id=request.session_id
         ):
-            print(chunk)
+            # print(chunk)
             yield chunk["data"]
         
     except Exception as e:
