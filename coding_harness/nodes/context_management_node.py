@@ -1,11 +1,13 @@
 import logging
 
 from langsmith import traceable
+from langgraph.config import get_stream_writer
 
-from services.llm_service import call_llm, call_openai_llm
-from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
+from services.llm_service import call_llm, call_openai_llm, call_openai_llm_with_stream
 from coding_harness.states import MainAgentState, GenericSubAgentState
 from config.env_config import env_settings
+from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
+from helpers.stream_utils import create_stream_event
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +65,6 @@ async def context_manager(state: MainAgentState | GenericSubAgentState):
 
         prompt_template = await load_prompt_template(prompt_file="context_manager.system")
         prompt = compile_prompt(prompt_content=prompt_template, input_mapping={})
-        print(f"\n\n{prompt}\n\n")
         messages = [
             {
                 "role": "system",
@@ -82,10 +83,32 @@ async def context_manager(state: MainAgentState | GenericSubAgentState):
         #     "role": "user",
         #     "content": f"Compressed context of what happened till now:\n{llm_response.message.content}"
         # }]
-        llm_response = await call_openai_llm(
-            messages=messages,
-            model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
-        )
+        if not state.get("streaming", False):
+            llm_response = await call_openai_llm(
+                messages=messages,
+                model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
+            )
+        else:
+            stream_writer = get_stream_writer()
+            llm_stream = call_openai_llm_with_stream(
+                messages=messages,
+                model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
+            )
+            async for chunk in llm_stream:
+                print(chunk)
+                if chunk.type == "response.reasoning_summary_text.delta":
+                    stream_writer(create_stream_event("chunk", "context_compression_reasoning", chunk.delta))
+                if chunk.type == "response.reasoning_summary_text.done":
+                    stream_writer(create_stream_event("stream_break", "context_compression_reasoning"))
+
+                if chunk.type == "response.output_text.delta":
+                    stream_writer(create_stream_event("chunk", "context_compression_response", chunk.delta))
+                if chunk.type == "response.output_text.done":
+                    stream_writer(create_stream_event("stream_break", "context_compression_response"))
+
+                if chunk.type == "response.completed":
+                    llm_response = chunk.response
+
         compressed_context_messages = [{
             "role": "user",
             "content": f"Compressed context of what happened till now:\n{llm_response.output_text}"

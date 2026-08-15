@@ -13,6 +13,7 @@ from coding_harness.tool_registries.main_agent_tool_registry import TOOLS as MAI
 from agentic_tools.adapter import build_ollama_tools, build_openai_tools
 from coding_harness.skill_registries.main_agent_skill_registry import main_agent_skill_registry
 from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
+from helpers.stream_utils import create_stream_event
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +229,7 @@ async def main_agent(state: MainAgentState):
     }]
     messages.extend(state.get("session_context_messages", []))
 
-    if not state.get("stream_mode", False):
+    if not state.get("streaming", False):
         llm_response: Response = await call_openai_llm(
             messages=messages,
             model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
@@ -237,24 +238,31 @@ async def main_agent(state: MainAgentState):
         )
     else:
         stream_writer = get_stream_writer()
-        llm_stream_event = call_openai_llm_with_stream(
+        llm_stream = call_openai_llm_with_stream(
             messages=messages,
             # model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
             model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
             tools=agent_tools,
             think="medium"
         )
-        async for event in llm_stream_event:
-            # print(event)
-            if event.type == "response.reasoning_summary_text.delta":
-                # print(f"Thinking: {event.delta}", end="")
-                # print(event.delta, end="", flush=True)
-                stream_writer({"thinking_chunk": event.delta})
-            if event.type == "response.output_text.delta":
-                # print(event.delta, end="", flush=True)
-                stream_writer({"response_chunk": event.delta})
-            if event.type == "response.completed":
-                llm_response = event.response
+        async for chunk in llm_stream:
+            print(chunk)
+            if chunk.type == "response.reasoning_summary_text.delta":
+                # print(f"Thinking: {chunk.delta}", end="")
+                # print(chunk.delta, end="", flush=True)
+                # stream_writer({"main_agent_reasoning_chunk": chunk.delta})
+                stream_writer(create_stream_event("chunk", "main_agent_reasoning", chunk.delta))
+            if chunk.type == "response.reasoning_summary_text.done":
+                stream_writer(create_stream_event("stream_break", "main_agent_reasoning"))
+
+            if chunk.type == "response.output_text.delta":
+                # print(chunk.delta, end="", flush=True)
+                stream_writer(create_stream_event("chunk", "main_agent_response", chunk.delta))
+            if chunk.type == "response.output_text.done":
+                stream_writer(create_stream_event("stream_break", "main_agent_response"))
+
+            if chunk.type == "response.completed":
+                llm_response = chunk.response
 
 
     # State management
@@ -304,7 +312,7 @@ async def main_agent(state: MainAgentState):
         "session_input_tokens": state.get("session_input_tokens", 0) + llm_response.usage.input_tokens,
         "session_output_tokens": state.get("session_output_tokens", 0) + llm_response.usage.output_tokens,
         "session_context_current_token_count": llm_response.usage.input_tokens + llm_response.usage.output_tokens,
-        
+
         "skill_registry": main_agent_skill_registry.SKILL_REGISTRY if tool_calls else {},
         "tool_registry": agent_tool_registry if tool_calls else {},
         "tool_calls": tool_calls if tool_calls else [],

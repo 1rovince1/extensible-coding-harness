@@ -205,9 +205,9 @@ def stream_sse_response(payload):
                 if not line:
                     continue
                 if line.startswith("data"):
-                    data_content = line[6:]
-                    if data_content == "[DONE]":
-                        break
+                    data_content = line[5:].strip()
+                    # if data_content == "[DONE]":
+                    #     break
                     try:
                         chunk_json = json.loads(data_content)
                         print(chunk_json)
@@ -228,10 +228,50 @@ with st.sidebar:
         format_func=lambda x: "New Session" if x == NEW_SESSION else str(x[0]),
         on_change=on_session_change
     )
-    stream_mode = st.checkbox(
-        label="Stream mode",
+    streaming = st.checkbox(
+        label="Streaming",
         value=True
     )
+
+
+def create_stream_ui(stream_name: str):
+    if stream_name == "main_agent_reasoning":
+        expander = st.expander("Thoughts", expanded=True)
+        with expander:
+            placeholder = st.empty()
+        return placeholder
+    elif stream_name == "main_agent_response":
+        return st.empty()
+    elif stream_name == "context_compression_reasoning":
+        expander = st.expander("Context compression thoughts", expanded=False)
+        with expander:
+            placeholder = st.empty()
+        return placeholder
+    elif stream_name == "context_compression_response":
+        expander = st.expander("Context compression response", expanded=False)
+        with expander:
+            placeholder = st.empty()
+        return placeholder
+
+def finalize_stream(stream_name: str, content: str):
+    if stream_name == "main_agent_reasoning":
+        st.session_state.messages.append({
+            "type": "reasoning",
+            "summary": [{
+                "type": "summary_text",
+                "text": content
+            }]
+        })
+    elif stream_name == "main_agent_response":
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": content
+        })
+    elif stream_name == "context_compression_response":
+        st.session_state.messages.append({
+            "role": "user",
+            "content": content
+        })
 
 
 def render_session_messages(messages: list):
@@ -276,7 +316,7 @@ if prompt := st.chat_input():
                 "user_query": prompt
             }
 
-            if not stream_mode:
+            if not streaming:
                 res = requests.post(
                     url=f"{SERVER_URL}/request_agent",
                     json=json_payload
@@ -317,37 +357,62 @@ if prompt := st.chat_input():
                 #         thinking_response = st.write_stream(thinking_generator)
                 #     ai_response = st.write_stream(response_generator)
                 # st.session_state.messages.append({"role": "assistant", "content": ai_response})
+
+
+                # with st.chat_message("assistant"):
+                #     with st.expander("Thinking...", expanded=True):
+                #         thinking_placeholder = st.empty()
+                #     response_placeholder = st.empty()
+
+                #     thinking_text = ""
+                #     response_text = ""
+
+                #     for token in stream_sse_response(json_payload):
+
+                #         if chunk := token.get("thinking_chunk"):
+                #             thinking_text += chunk
+                #             thinking_placeholder.markdown(thinking_text)
+                #         if chunk := token.get("response_chunk"):
+                #             response_text += chunk
+                #             response_placeholder.markdown(response_text)
+
+                # st.session_state.messages.append({
+                #     "type": "reasoning",
+                #     "summary": [{
+                #         "type": "summary_text",
+                #         "text": thinking_text
+                #     }]
+                # })
+                # st.session_state.messages.append({
+                #     "role": "assistant",
+                #     # "thoughts": thinking_text,
+                #     "content": response_text 
+                # })
+
                 with st.chat_message("assistant"):
-                    with st.expander("Thinking...", expanded=True):
-                        thinking_placeholder = st.empty()
-                    response_placeholder = st.empty()
+                    current_stream = None
+                    current_text = ""
+                    current_placeholder = None
 
-                    thinking_text = ""
-                    response_text = ""
+                    for event in stream_sse_response(json_payload):
+                        if event["type"] == "chunk":
+                            stream = event["stream"]
+                            if current_stream != stream:
+                                current_stream = stream
+                                current_text = ""
+                                current_placeholder = create_stream_ui(stream) 
 
-                    for token in stream_sse_response(json_payload):
+                            current_text += event["content"]
+                            current_placeholder.markdown(current_text)
 
-                        if chunk := token.get("thinking_chunk"):
-                            thinking_text += chunk
-                            thinking_placeholder.markdown(thinking_text)
-                        if chunk := token.get("response_chunk"):
-                            response_text += chunk
-                            response_placeholder.markdown(response_text)
-
-                st.session_state.messages.append({
-                    "type": "reasoning",
-                    "summary": [{
-                        "type": "summary_text",
-                        "text": thinking_text
-                    }]
-                })
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    # "thoughts": thinking_text,
-                    "content": response_text 
-                })
-
-
+                        elif event["type"] == "stream_break":
+                            finalize_stream(
+                                event["stream"],
+                                current_text
+                            )
+                            current_stream = None
+                            current_text = ""
+                            current_placeholder = None
 
         except Exception as e:
             st.error(f"Error communicating with agent: {e}")

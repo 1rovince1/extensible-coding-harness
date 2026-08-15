@@ -5,7 +5,7 @@ from typing_extensions import TypedDict
 
 class MainAgentState(TypedDict):
     # session_messages: Annotated[list[dict[str, str]], operator.add]
-    stream_mode: bool
+    streaming: bool
     
     session_messages: list[dict[str, str]]
     session_context_messages: list[dict[str, str]]

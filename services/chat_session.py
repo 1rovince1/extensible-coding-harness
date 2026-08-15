@@ -29,7 +29,7 @@ async def process_user_request(
     }
     session_state["session_messages"].append(user_query_message)
     session_state["session_context_messages"].append(user_query_message)
-    session_state["stream_mode"] = False
+    session_state["streaming"] = False
 
     resultant_state = await compiled_harness.ainvoke(session_state)
     logger.info(f"User request processing result: {resultant_state}")
@@ -68,7 +68,7 @@ async def process_user_request_streaming(
     }
     session_state["session_messages"].append(user_query_message)
     session_state["session_context_messages"].append(user_query_message)
-    session_state["stream_mode"] = True
+    session_state["streaming"] = True
 
     # graph_config = {
     #     "configurable": {
@@ -80,12 +80,20 @@ async def process_user_request_streaming(
     async for event in compiled_harness.astream(
         session_state,
         # config=graph_config,
-        stream_mode=["custom", "values"],
+        stream_mode=["custom", "updates", "values"],
         version="v2"
     ):
         if event["type"] == "custom":
             # print(event)
             yield event
+        # elif event["type"] == "updates":
+        #     for node_name, state in event["data"].items():
+        #         if node_name == "context_manager":
+        #             yield {
+        #                 "data": {
+        #                     "compressed_context": state.get("session_context_messages", [])
+        #                 }
+        #             }
         elif event["type"] == "values":
             resultant_state = event["data"]
 
