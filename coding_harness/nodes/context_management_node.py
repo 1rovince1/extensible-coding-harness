@@ -3,28 +3,29 @@ import logging
 from langsmith import traceable
 
 from services.llm_service import call_llm, call_openai_llm
+from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
 from coding_harness.states import MainAgentState, GenericSubAgentState
 from config.env_config import env_settings
 
 logger = logging.getLogger(__name__)
 
 
-prompt = """
-You are a context compression agent.
-Your job is to compress the given context into a brief summary.
-The context will be brief, but it should contain everything that has happened till now,
-and what is currently requested by the user, or what is being done at the moment should be preserved as it is of great importance.
-This compressed context will replace the given context, and will be used to further understand the tasks to be performed.
+# prompt = """
+# You are a context compression agent.
+# Your job is to compress the given context into a brief summary.
+# The context will be brief, but it should contain everything that has happened till now,
+# and what is currently requested by the user, or what is being done at the moment should be preserved as it is of great importance.
+# This compressed context will replace the given context, and will be used to further understand the tasks to be performed.
 
-When generting a context summary:
-Clearly mention the goal (user's request):
-**GOAL**
-Clearly mention what has been done to achieve the goal, and what more is required:
-**Steps taken**
+# When generting a context summary:
+# Clearly mention the goal (user's request):
+# **GOAL**
+# Clearly mention what has been done to achieve the goal, and what more is required:
+# **Steps taken**
 
-The resulting summary would be a prompt that would guide the agents to work towards the goal, which was the user's request.
-Important things like the plan of work should not be summarised and kept as they are in the context.
-"""
+# The resulting summary would be a prompt that would guide the agents to work towards the goal, which was the user's request.
+# Important things like the plan of work should not be summarised and kept as they are in the context.
+# """
 # If something is important (like the work plan, etc.) to the goal and process, it should not be summarised and tried to be replicated in the new context.
 
 
@@ -59,6 +60,10 @@ async def context_manager(state: MainAgentState | GenericSubAgentState):
     if current_session_context_tokens >= env_settings.CONTEXT_TOKENS_ALLOWED:
         logger.info("Compressing context")
         messages_to_compress = session_context_messages
+
+        prompt_template = await load_prompt_template(prompt_file="context_manager.system")
+        prompt = compile_prompt(prompt_content=prompt_template, input_mapping={})
+        print(f"\n\n{prompt}\n\n")
         messages = [
             {
                 "role": "system",
@@ -73,13 +78,17 @@ async def context_manager(state: MainAgentState | GenericSubAgentState):
         #     messages=messages,
         #     model=env_settings.OLLAMA_CONTEXT_COMPRESSION_MODEL
         # )
+        # compressed_context_messages = [{
+        #     "role": "user",
+        #     "content": f"Compressed context of what happened till now:\n{llm_response.message.content}"
+        # }]
         llm_response = await call_openai_llm(
             messages=messages,
             model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
         )
         compressed_context_messages = [{
             "role": "user",
-            "content": f"Compressed context of what happened till now:\n{llm_response.message.content}"
+            "content": f"Compressed context of what happened till now:\n{llm_response.output_text}"
         }]
 
     logger.info("Exiting context manager node")
