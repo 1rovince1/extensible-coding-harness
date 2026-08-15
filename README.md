@@ -15,3 +15,4 @@ LangGraph graph:
 - edit file tool to perform changes in specific parts in file
 - langsmith -> langfuse
 - context limit auto updation based on model instead of env setting
+- streaming should include tool calls and subagent flows
