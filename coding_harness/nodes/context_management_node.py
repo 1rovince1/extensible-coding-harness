@@ -1,31 +1,15 @@
 import logging
 
 from langsmith import traceable
+from langgraph.config import get_stream_writer
 
-from services.llm_service import call_llm
+from services.llm_service import call_llm, call_openai_llm, call_openai_llm_with_stream
 from coding_harness.states import MainAgentState, GenericSubAgentState
 from config.env_config import env_settings
+from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
+from helpers.stream_utils import create_stream_event
 
 logger = logging.getLogger(__name__)
-
-
-prompt = """
-You are a context compression agent.
-Your job is to compress the given context into a brief summary.
-The context will be brief, but it should contain everything that has happened till now,
-and what is currently requested by the user, or what is being done at the moment should be preserved as it is of great importance.
-This compressed context will replace the given context, and will be used to further understand the tasks to be performed.
-
-When generting a context summary:
-Clearly mention the goal (user's request):
-**GOAL**
-Clearly mention what has been done to achieve the goal, and what more is required:
-**Steps taken**
-
-The resulting summary would be a prompt that would guide the agents to work towards the goal, which was the user's request.
-Important things like the plan of work should not be summarised and kept as they are in the context.
-"""
-# If something is important (like the work plan, etc.) to the goal and process, it should not be summarised and tried to be replicated in the new context.
 
 
 @traceable
@@ -52,12 +36,16 @@ async def context_manager(state: MainAgentState | GenericSubAgentState):
             "output": tool_results[idx]
         })
 
-    updated_session_messages = state.get("session_messages", []) + tool_messages
-    current_session_tokens = state.get("session_current_token_count", 0)
-    
-    if current_session_tokens >= env_settings.CONTEXT_TOKENS_ALLOWED:
+    session_context_messages = state.get("session_context_messages", []) + tool_messages
+    current_session_context_tokens = state.get("session_context_current_token_count", 0)
+
+    compressed_context_messages = []
+    if current_session_context_tokens >= env_settings.CONTEXT_TOKENS_ALLOWED:
         logger.info("Compressing context")
-        messages_to_compress = updated_session_messages
+        messages_to_compress = session_context_messages
+
+        prompt_template = await load_prompt_template(prompt_file="context_manager.system")
+        prompt = compile_prompt(prompt_content=prompt_template, input_mapping={})
         messages = [
             {
                 "role": "system",
@@ -68,17 +56,47 @@ async def context_manager(state: MainAgentState | GenericSubAgentState):
                 "content": f"Context to compress:\n{messages_to_compress}"
             }
         ]
-        llm_response = await call_llm(
-            messages=messages,
-            # model=env_settings.OLLAMA_CONTEXT_COMPRESSION_MODEL
-            model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
-        )
-        updated_session_messages = [{
+        # llm_response = await call_llm(
+        #     messages=messages,
+        #     model=env_settings.OLLAMA_CONTEXT_COMPRESSION_MODEL
+        # )
+        # compressed_context_messages = [{
+        #     "role": "user",
+        #     "content": f"Compressed context of what happened till now:\n{llm_response.message.content}"
+        # }]
+        if not state.get("streaming", False):
+            llm_response = await call_openai_llm(
+                messages=messages,
+                model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
+            )
+        else:
+            stream_writer = get_stream_writer()
+            llm_stream = call_openai_llm_with_stream(
+                messages=messages,
+                model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
+            )
+            async for chunk in llm_stream:
+                print(chunk)
+                if chunk.type == "response.reasoning_summary_text.delta":
+                    stream_writer(create_stream_event("chunk", "context_compression_reasoning", chunk.delta))
+                if chunk.type == "response.reasoning_summary_text.done":
+                    stream_writer(create_stream_event("stream_break", "context_compression_reasoning"))
+
+                if chunk.type == "response.output_text.delta":
+                    stream_writer(create_stream_event("chunk", "context_compression_response", chunk.delta))
+                if chunk.type == "response.output_text.done":
+                    stream_writer(create_stream_event("stream_break", "context_compression_response"))
+
+                if chunk.type == "response.completed":
+                    llm_response = chunk.response
+
+        compressed_context_messages = [{
             "role": "user",
-            "content": f"Compressed context of what happened till now:\n{llm_response.message.content}"
+            "content": f"Compressed context of what happened till now:\n{llm_response.output_text}"
         }]
 
     logger.info("Exiting context manager node")
     return {
-        "session_messages": updated_session_messages
+        "session_messages": state.get("session_messages", []) + tool_messages + compressed_context_messages,
+        "session_context_messages": compressed_context_messages if compressed_context_messages else session_context_messages
     }
