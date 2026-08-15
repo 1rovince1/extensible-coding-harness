@@ -12,25 +12,6 @@ from helpers.stream_utils import create_stream_event
 logger = logging.getLogger(__name__)
 
 
-# prompt = """
-# You are a context compression agent.
-# Your job is to compress the given context into a brief summary.
-# The context will be brief, but it should contain everything that has happened till now,
-# and what is currently requested by the user, or what is being done at the moment should be preserved as it is of great importance.
-# This compressed context will replace the given context, and will be used to further understand the tasks to be performed.
-
-# When generting a context summary:
-# Clearly mention the goal (user's request):
-# **GOAL**
-# Clearly mention what has been done to achieve the goal, and what more is required:
-# **Steps taken**
-
-# The resulting summary would be a prompt that would guide the agents to work towards the goal, which was the user's request.
-# Important things like the plan of work should not be summarised and kept as they are in the context.
-# """
-# If something is important (like the work plan, etc.) to the goal and process, it should not be summarised and tried to be replicated in the new context.
-
-
 @traceable
 async def context_manager(state: MainAgentState | GenericSubAgentState):
     logger.info("Inside context manager node")

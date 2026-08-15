@@ -19,34 +19,6 @@ logger = logging.getLogger(__name__)
 agent_tool_registry = {**SUB_AGENT_TOOLS}
 # agent_tools = build_ollama_tools(agent_tool_registry)
 agent_tools = build_openai_tools(agent_tool_registry)
-# agent_skill_registry = generic_sub_agent_skill_registry.SKILL_REGISTRY
-# agent_skills_metadata = generic_sub_agent_skill_registry.SKILLS_METADATA
-# formatted_skills_metadata = "\n\n".join(
-#     f"skill name: {skill_metadata['name']}"
-#     f"skill description: {skill_metadata['description']}"
-#     for skill_metadata in agent_skills_metadata
-# )
-
-
-# prompt = f"""
-# You are a generic helper agent invoked by a master agent.
-# Your job is to complete whatever task has been delegated to you with the help of avialable tools.
-# Your tasks:
-#     - Analyze the task
-#     - Save the final generate codes or data to files via the CLI
-#     - You and master agent have access to the same working dir, and all the coding should be done in there
-#     - Any shell commands executed in this working dir itself; you can read/write files using shell commands
-#     - Report to the master agent after the task is done with clear description and proof of what has been done
-
-# You also have access to a set of skills given below, which you can load using the load skill tool.
-# A skill is a set of instructions for more efficient use of tools, or some specific tasks.
-
-# Available Skills:
-# {agent_skills_metadata}
-# """
-# Allowed shell commands via the shell tool are: {env_settings.SHELL_COMMANDS_ALLOWED}
-# If you want to write to a file use this method: cat > filename <<'EOF'.....
-# If you want to update some part an existing file use: sed ....
 
 
 @traceable
@@ -133,7 +105,7 @@ async def generic_sub_agent(state: GenericSubAgentState):
         "session_input_tokens": state.get("session_input_tokens", 0) + llm_response.usage.input_tokens,
         "session_output_tokens": state.get("session_output_tokens", 0) + llm_response.usage.output_tokens,
         "session_context_current_token_count": llm_response.usage.input_tokens + llm_response.usage.output_tokens,
-        
+
         "skill_registry": generic_sub_agent_skill_registry.SKILL_REGISTRY if tool_calls else {},
         "tool_registry": agent_tool_registry if tool_calls else {},
         "tool_calls": tool_calls if tool_calls else [],
