@@ -5,7 +5,7 @@ LangGraph graph:
 ## Done:
 - skills' integration
 - provider agnosticism (integrated openai library - supported by multiple providers)
-- streaming response to user - in progress (separation in streaming thoughts and streaming of context-compression/sub-agents remains if desired)
+- streaming response to user - in progress (streaming of sub-agents, tools and skills remains if desired)
 
 ### TODO:
 - circular import (task_delegation and sub_agent nodes) resolution once and for all
