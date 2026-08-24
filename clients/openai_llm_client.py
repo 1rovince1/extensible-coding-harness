@@ -21,7 +21,9 @@ class OpenAIClient:
 
     async def disconnect(self):
         logger.info("Disconnecting OpenAI client...")
-        self.client = None
+        if self.client:
+            await self.client.close()
+            self.client = None
         logger.info("Disconnected OpenAI client!")
 
 
