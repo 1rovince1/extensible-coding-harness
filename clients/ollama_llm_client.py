@@ -21,7 +21,9 @@ class OllamaClient:
 
     async def disconnect(self):
         logger.info("Disconnecting from Ollama client...")
-        self.client = None
+        if self.client:
+            await self.client.close()
+            self.client = None
         logger.info("Disconnected from Ollama client!")
 
 ollama_manager = OllamaClient()
