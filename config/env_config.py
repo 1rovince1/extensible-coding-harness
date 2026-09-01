@@ -19,8 +19,8 @@ class EnvSettings(BaseSettings):
     OLLAMA_CONTEXT_COMPRESSION_MODEL: str = "gpt-oss:120b-cloud"
 
     LLM_PROVIDER_API: Literal[
-        "openai_responses",
         "openai_chat_completions",
+        "openai_responses",
         "ollama"
     ] = "openai_responses"
 

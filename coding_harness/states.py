@@ -7,8 +7,8 @@ from typing import Literal
 class MainAgentState(TypedDict):
     streaming: bool
     llm_provider_api: Literal[
-        "openai_responses",
         "openai_chat_completions",
+        "openai_responses",
         "ollama"
     ]
     
@@ -38,8 +38,8 @@ class MainAgentState(TypedDict):
 
 class GenericSubAgentState(TypedDict):
     llm_provider_api: Literal[
-        "openai_responses",
         "openai_chat_completions",
+        "openai_responses",
         "ollama"
     ]
     

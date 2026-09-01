@@ -41,7 +41,7 @@ class LLMResponseParsing:
     @staticmethod
     def parse_llm_response(
         llm_response,
-        llm_provider_api
+        llm_provider_api: str
     ):
         if llm_provider_api == "openai_responses":
             turn_messages = []
@@ -127,19 +127,19 @@ class ToolResponseParsing:
     ):
         tool_messages = []
         for tool_completion in tool_completions:
-            if llm_provider_api == "openai_responses":
-                tool_messages.append({
-                    "type": "function_call_output",
-                    "call_id": tool_completion[0]["tool_call_id"],
-                    "output": tool_completion[1]
-                })
             if llm_provider_api == "openai_chat_completions":
                 tool_messages.append({
                     "role": "tool",
                     "tool_call_id": tool_completion[0]["tool_call_id"],
                     "content": tool_completion[1]
                 })
-            if llm_provider_api == "ollama":
+            elif llm_provider_api == "openai_responses":
+                tool_messages.append({
+                    "type": "function_call_output",
+                    "call_id": tool_completion[0]["tool_call_id"],
+                    "output": tool_completion[1]
+                })
+            elif llm_provider_api == "ollama":
                 tool_messages.append({
                     "role": "tool",
                     "tool_name": tool_completion[0]["tool_name"],
