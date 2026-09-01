@@ -5,7 +5,7 @@ import json
 from langsmith import traceable
 from openai.types.responses.response import Response
 
-from services.llm_service import call_llm, call_openai_llm
+from services.llm_service import call_ollama_llm, call_openai_llm
 from coding_harness.states import GenericSubAgentState
 from config.env_config import env_settings
 from coding_harness.tool_registries.generic_sub_agent_tool_registry import TOOLS as SUB_AGENT_TOOLS
@@ -45,7 +45,7 @@ async def generic_sub_agent(state: GenericSubAgentState):
     }]
     messages.extend(state.get("session_context_messages", []))
     
-    # llm_response = await call_llm(
+    # llm_response = await call_ollama_llm(
     #     messages=messages,
     #     model=env_settings.OLLAMA_SUB_AGENT_MODEL,
     #     tools=agent_tools,

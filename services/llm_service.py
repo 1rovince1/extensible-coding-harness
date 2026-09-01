@@ -97,7 +97,7 @@ async def call_openai_llm_with_stream(
         retry_multiplier=5,
         exceptions_to_retry=[TimeoutError]
 )
-async def call_llm(
+async def call_ollama_llm(
         messages: list[dict[str, str]],
         model: str,
         think: bool = False,
@@ -122,7 +122,7 @@ async def call_llm(
     return llm_response
 
 
-# async def call_llm(
+# async def call_ollama_llm(
 #         messages: list[str],
 #         model: str,
 #         think: bool = False,

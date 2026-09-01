@@ -2,7 +2,7 @@ import logging
 
 from langsmith import traceable
 
-from services.llm_service import call_llm, call_openai_llm, call_openai_llm_with_stream
+from services.llm_service import call_ollama_llm, call_openai_llm, call_openai_llm_with_stream
 from coding_harness.states import MainAgentState, GenericSubAgentState
 from config.env_config import env_settings
 from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
@@ -57,7 +57,7 @@ async def context_compressor(state: MainAgentState | GenericSubAgentState):
                 "content": f"Context to compress:\n{messages_to_compress}"
             }
         ]
-        # llm_response = await call_llm(
+        # llm_response = await call_ollama_llm(
         #     messages=messages,
         #     model=env_settings.OLLAMA_CONTEXT_COMPRESSION_MODEL
         # )

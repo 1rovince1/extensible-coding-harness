@@ -5,7 +5,7 @@ import json
 from langsmith import traceable
 from openai.types.responses.response import Response
 
-from services.llm_service import call_llm, call_openai_llm, call_openai_llm_with_stream
+from services.llm_service import call_ollama_llm, call_openai_llm, call_openai_llm_with_stream
 from coding_harness.states import MainAgentState
 from config.env_config import env_settings
 from coding_harness.tool_registries.main_agent_tool_registry import TOOLS as MAIN_AGENT_TOOLS
