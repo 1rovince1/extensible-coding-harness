@@ -46,7 +46,7 @@ async def tool_result_synthesizer(state: MainAgentState):
     tool_calls = function_calls + sub_agent_calls + skill_calls
     tool_results = function_results + sub_agent_responses + skill_results
     tool_messages = ToolResponseParsing.compile_tool_messages(
-        tool_completions=zip(tool_calls, tool_results),
+        tool_completions=list(zip(tool_calls, tool_results)),
         llm_provider_api=state["llm_provider_api"]
     )
 

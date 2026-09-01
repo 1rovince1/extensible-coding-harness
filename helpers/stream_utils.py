@@ -22,6 +22,8 @@ def create_stream_event(
 
 async def stream_response(agent_name: str, stream_generator):
     stream_writer = get_stream_writer()
+    llm_response = None
+    
     async for chunk in stream_generator:
         # print(chunk)
         if chunk.type == "response.reasoning_summary_text.delta":

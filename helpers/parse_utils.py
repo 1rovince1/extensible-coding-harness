@@ -128,13 +128,13 @@ class ToolResponseParsing:
                 tool_messages.append({
                     "type": "function_call_output",
                     "call_id": tool_completion[0]["tool_call_id"],
-                    "output": tool_completions[1]
+                    "output": tool_completion[1]
                 })
             if llm_provider_api == "openai_chat_completions":
                 tool_messages.append({
                     "role": "tool",
                     "tool_call_id": tool_completion[0]["tool_call_id"],
-                    "content": tool_completions[1]
+                    "content": tool_completion[1]
                 })
             if llm_provider_api == "ollama":
                 tool_messages.append({

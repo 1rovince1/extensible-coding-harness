@@ -39,7 +39,7 @@ async def call_openai_llm(
         model=model,
         input=messages,
         reasoning={
-            "effort": think
+            "effort": reasoning_effort
         },
         tools=tools
     )
@@ -62,7 +62,7 @@ async def call_openai_llm(
 async def call_openai_llm_with_stream(
     messages: list[dict[str, str]],
     model: str,
-    reasoning_effor: Literal[
+    reasoning_effort: Literal[
         "high",
         "medium",
         "low",
@@ -80,7 +80,7 @@ async def call_openai_llm_with_stream(
         model=model,
         input=messages,
         reasoning={
-            "effort": think
+            "effort": reasoning_effort
         },
         tools=tools,
         stream=True
