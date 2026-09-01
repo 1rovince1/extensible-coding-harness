@@ -60,7 +60,10 @@ async def generic_sub_agent(state: GenericSubAgentState):
     )
 
     # response parsing
-    parsed_llm_response = LLMResponseParsing.parse_openai_responses_response(llm_response=llm_response)
+    parsed_llm_response = LLMResponseParsing.parse_llm_response(
+        llm_response=llm_response,
+        llm_provider_api=state["llm_provider_api"]
+    )
 
     logger.info("Exiting generic sub agent node")
     return {

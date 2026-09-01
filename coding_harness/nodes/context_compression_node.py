@@ -80,7 +80,10 @@ async def context_compressor(state: MainAgentState | GenericSubAgentState):
                 stream_generator=llm_stream
             )
 
-        parsed_llm_response = LLMResponseParsing.parse_openai_responses_response(llm_response=llm_response)
+        parsed_llm_response = LLMResponseParsing.parse_llm_response(
+            llm_response=llm_response,
+            llm_provider_api=state["llm_provider_api"]
+        )
 
         compressed_context_messages = [{
             "role": "user",
