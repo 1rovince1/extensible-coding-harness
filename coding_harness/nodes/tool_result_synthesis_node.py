@@ -3,6 +3,7 @@ import logging
 from langsmith import traceable
 
 from coding_harness.states import MainAgentState
+from helpers.parse_utils import ToolResponseParsing
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +45,23 @@ async def tool_result_synthesizer(state: MainAgentState):
 
     tool_calls = function_calls + sub_agent_calls + skill_calls
     tool_results = function_results + sub_agent_responses + skill_results
+    tool_messages = ToolResponseParsing.compile_tool_messages(
+        tool_completions=zip(tool_calls, tool_results),
+        llm_provider_api=state["llm_provider_api"]
+    )
 
     logger.info("Exiting tool synthesizer node")
     return{
-        "tool_calls": tool_calls,
-        "tool_results": tool_results,
+        # "tool_calls": tool_calls,
+        # "tool_results": tool_results,
+        "tool_calls": [],
+        "tool_results": [],
         "function_calls": [],
         "function_results": [],
         "sub_agent_calls": [],
         "sub_agent_results": [],
         "skill_calls": [],
-        "skill_results": []
+        "skill_results": [],
+        "session_messages": state.get("session_messages", []) + tool_messages,
+        "session_context_messages": state.get("session_context_messages", []) + tool_messages
     }

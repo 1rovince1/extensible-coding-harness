@@ -30,6 +30,7 @@ async def process_user_request(
     session_state["session_messages"].append(user_query_message)
     session_state["session_context_messages"].append(user_query_message)
     session_state["streaming"] = False
+    session_state["llm_provider_api"] = env_settings.LLM_PROVIDER_API
 
     resultant_state = await compiled_harness.ainvoke(session_state)
     logger.info(f"User request processing result: {resultant_state}")
@@ -69,6 +70,7 @@ async def process_user_request_streaming(
     session_state["session_messages"].append(user_query_message)
     session_state["session_context_messages"].append(user_query_message)
     session_state["streaming"] = True
+    session_state["llm_provider_api"] = env_settings.LLM_PROVIDER_API
 
     # graph_config = {
     #     "configurable": {

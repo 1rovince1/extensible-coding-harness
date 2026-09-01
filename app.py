@@ -81,13 +81,13 @@ def create_stream_ui(stream_name: str):
     elif stream_name == "main_agent_response":
         with st.chat_message("assistant"):
             return st.empty()
-    elif stream_name == "context_compression_reasoning":
+    elif stream_name == "context_compressor_agent_reasoning":
         with st.chat_message("assistant"):
             expander = st.expander("Context compression thoughts", expanded=False)
             with expander:
                 placeholder = st.empty()
         return placeholder
-    elif stream_name == "context_compression_response":
+    elif stream_name == "context_compressor_agent_response":
         with st.chat_message("assistant"):
             expander = st.expander("Context compression response", expanded=False)
             with expander:

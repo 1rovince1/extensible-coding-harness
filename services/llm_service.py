@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 async def call_openai_llm(
     messages: list[dict[str, str]],
     model: str,
-    think: Literal[
+    reasoning_effort: Literal[
         "high",
         "medium",
         "low",
@@ -62,7 +62,7 @@ async def call_openai_llm(
 async def call_openai_llm_with_stream(
     messages: list[dict[str, str]],
     model: str,
-    think: Literal[
+    reasoning_effor: Literal[
         "high",
         "medium",
         "low",
@@ -87,19 +87,8 @@ async def call_openai_llm_with_stream(
     )
 
     logger.info(f"Raw LLM response: {llm_response}")
-    # logger.info(
-    #     "Token usage:\n"
-    #     f"Input tokens: {llm_response.usage.input_tokens}\n"
-    #     f"Output tokens: {llm_response.usage.output_tokens}"
-    # )
 
     async for event in llm_response:
-        # print(event)
-        # if event.type == "response.reasoning_summary_text.delta":
-        #     # print(f"Thinking: {event.delta}", end="")
-        #     print(event.delta, end="", flush=True)
-        # if event.type == "response.output_text.delta":
-        #     print(event.delta, end="", flush=True)
         yield event
 
 
