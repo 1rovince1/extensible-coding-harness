@@ -2,9 +2,16 @@ import logging
 from typing import Literal
 
 from langgraph.config import get_stream_writer
-from openai.types.chat.chat_completion import ChatCompletion, Choice
-from openai.types.chat.chat_completion_message import ChatCompletionMessage
-from openai.types.completion_usage import CompletionUsage
+from openai.types.chat.chat_completion import (
+    ChatCompletion as OpenAIChatCompletion,
+    Choice as OpenAIChoice
+)
+from openai.types.chat.chat_completion_message import ChatCompletionMessage as OpenAIChatCompletionMessage
+from openai.types.completion_usage import CompletionUsage as OpenAICompletionUsage
+from ollama import (
+    ChatResponse as OllamaChatResponse,
+    Message as OllamaMessage
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +44,13 @@ async def stream_and_consolidate_response(
 
     if llm_provider_api == "openai_chat_completions":
         last_chunk_type = None
-        consolidated_llm_response = ChatCompletion.model_construct()
-        consolidated_llm_response.choices = [Choice.model_construct()]
-        consolidated_llm_response.choices[0].message = ChatCompletionMessage.model_construct()
+        consolidated_llm_response = OpenAIChatCompletion.model_construct()
+        consolidated_llm_response.choices = [OpenAIChoice.model_construct()]
+        consolidated_llm_response.choices[0].message = OpenAIChatCompletionMessage.model_construct()
         consolidated_llm_response.choices[0].message.reasoning = ""
         consolidated_llm_response.choices[0].message.content = ""
         consolidated_llm_response.choices[0].message.tool_calls = []
-        consolidated_llm_response.usage = CompletionUsage.model_construct()
+        consolidated_llm_response.usage = OpenAICompletionUsage.model_construct()
         async for chunk in stream_generator:
             print(chunk)
             if chunk.usage:
@@ -89,5 +96,40 @@ async def stream_and_consolidate_response(
                 stream_writer(create_stream_event("chunk", f"{agent_name}_response", chunk.delta))
             elif chunk.type == "response.output_text.done":
                 stream_writer(create_stream_event("stream_break", f"{agent_name}_response"))
+
+
+    elif llm_provider_api == "ollama":
+        last_chunk_type = None
+        consolidated_llm_response = OllamaChatResponse.model_construct()
+        consolidated_llm_response.message = OllamaMessage.model_construct()
+        consolidated_llm_response.message.thinking = ""
+        consolidated_llm_response.message.content = ""
+        consolidated_llm_response.message.tool_calls = []
+        async for chunk in stream_generator:
+            print(chunk)
+            if chunk.done:
+                if last_chunk_type == "response":
+                    stream_writer(create_stream_event("stream_break", f"{agent_name}_response"))
+                consolidated_llm_response.prompt_eval_count = chunk.prompt_eval_count
+                consolidated_llm_response.eval_count = chunk.eval_count
+                last_chunk_type == "finish"
+
+            elif chunk.message.thinking:
+                stream_writer(create_stream_event("chunk", f"{agent_name}_reasoning", chunk.message.thinking))
+                consolidated_llm_response.message.thinking += chunk.message.thinking
+                last_chunk_type = "reasoning"
+
+            elif chunk.message.content:
+                if last_chunk_type == "reasoning":
+                    stream_writer(create_stream_event("stream_break", f"{agent_name}_reasoning"))
+                stream_writer(create_stream_event("chunk", f"{agent_name}_response", chunk.message.content))
+                consolidated_llm_response.message.content += chunk.message.content
+                last_chunk_type = "response"
+
+            elif chunk.message.tool_calls:
+                if last_chunk_type == "reasoning":
+                    stream_writer(create_stream_event("stream_break", f"{agent_name}_reasoning"))
+                consolidated_llm_response.message.tool_calls.extend(chunk.message.tool_calls)
+                last_chunk_type == "tool_call"
 
     return consolidated_llm_response

@@ -1,6 +1,5 @@
 import os
 import logging
-import json
 
 from langsmith import traceable
 
@@ -14,8 +13,6 @@ from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_templ
 from helpers.parse_utils import LLMResponseParsing
 
 logger = logging.getLogger(__name__)
-
-
 
 
 @traceable

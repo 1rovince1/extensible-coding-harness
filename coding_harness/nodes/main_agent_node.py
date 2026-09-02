@@ -1,9 +1,7 @@
 import os
 import logging
-import json
 
 from langsmith import traceable
-from openai.types.responses.response import Response
 
 from services.llm_service import call_llm
 from coding_harness.states import MainAgentState

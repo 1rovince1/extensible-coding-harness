@@ -135,7 +135,7 @@ class LLMResponseParsing:
                 })
 
             tool_calls = []
-            if llm_response.tools:
+            if llm_response.message.tool_calls:
                 tool_call_messages = []
                 for tool_call in llm_response.message.tool_calls:
                     tool_calls.append({
