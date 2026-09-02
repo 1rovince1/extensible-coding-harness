@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class MarkdownParsing:
     def __init__(self):
         self.frontmatter_regex = re.compile(
-            "^---\s*\n(.*?)\n---\s*\n",
+            r"^---\s*\n(.*?)\n---\s*\n",
             re.DOTALL | re.MULTILINE
         )
 
