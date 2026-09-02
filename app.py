@@ -108,7 +108,7 @@ def finalize_stream(stream_name: str, content: str):
             "role": "assistant",
             "content": content
         })
-    elif stream_name == "context_compression_response":
+    elif stream_name == "context_compressor_agent_response":
         st.session_state.messages.append({
             "role": "user",
             "content": content
@@ -126,7 +126,11 @@ def render_session_messages(messages: list):
                             st.markdown(thoughts)
 
                 elif message.get("role") == "assistant":
-                    st.markdown(message["content"])
+                    if message.get("content"):
+                        st.markdown(message["content"])
+                    elif message.get("reasoning"):
+                        with st.expander("Thoughts", expanded=False):
+                            st.markdown(message["reasoning"])
 
         elif message.get("role") == "user":
             with st.chat_message("user"):

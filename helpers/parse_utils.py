@@ -2,6 +2,7 @@ import logging
 import re
 import yaml
 import json
+from typing import Literal
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +41,45 @@ class MarkdownParsing:
 class LLMResponseParsing:
     @staticmethod
     def parse_llm_response(
-        llm_response,
-        llm_provider_api: str
+        llm_provider_api: Literal[
+            "openai_chat_completions",
+            "openai_responses",
+            "ollama"
+        ],
+        llm_response
     ):
-        if llm_provider_api == "openai_responses":
+        if llm_provider_api == "openai_chat_completions":
+            turn_message = {
+                "role": "assistant"
+            }
+            if hasattr(llm_response.choices[0].message, "reasoning"):
+                turn_message["reasoning"] = llm_response.choices[0].message.reasoning
+
+            if llm_response.choices[0].message.content:
+                turn_message["content"] = llm_response.choices[0].message.content
+
+            tool_calls = []
+            if llm_response.choices[0].message.tool_calls:
+                tool_call_messages = []
+                for tool_call in llm_response.choices[0].message.tool_calls:
+                    tool_calls.append({
+                        "tool_call_id": tool_call.id,
+                        "tool_name": tool_call.function.name,
+                        "tool_args": json.loads(tool_call.function.arguments)
+                    })
+                    tool_call_messages.append(tool_call.model_dump())
+                turn_message["tool_calls"] = tool_call_messages
+
+            return {
+                "output_text": llm_response.choices[0].message.content,
+                "turn_messages": [turn_message],
+                "tool_calls": tool_calls,
+                "input_tokens": llm_response.usage.prompt_tokens,
+                "output_tokens": llm_response.usage.completion_tokens
+            }
+
+        
+        elif llm_provider_api == "openai_responses":
             turn_messages = []
             for message in llm_response.output:
                 if message.type != "reasoning":
@@ -100,15 +136,17 @@ class LLMResponseParsing:
 
             tool_calls = []
             if llm_response.tools:
+                tool_call_messages = []
                 for tool_call in llm_response.message.tool_calls:
                     tool_calls.append({
-                            "tool_name": tool_call.function.name,
-                            "tool_args": tool_call.function.arguments
+                        "tool_name": tool_call.function.name,
+                        "tool_args": tool_call.function.arguments
                     })
-                    turn_messages.append({
-                        "role": "assistant",
-                        "tool_calls": tool_call.model_dump()
-                    })
+                    tool_call_messages.append(tool_call.model_dump())
+                turn_messages.append({
+                    "role": "assistant",
+                    "tool_calls": tool_call_messages
+                })
 
             return {
                 "output_text": llm_response.message.content,
@@ -122,8 +160,12 @@ class LLMResponseParsing:
 class ToolResponseParsing:
     @staticmethod
     def compile_tool_messages(
-        tool_completions: list[tuple[dict[str, str]]],
-        llm_provider_api: str
+        llm_provider_api: Literal[
+            "openai_chat_completions",
+            "openai_responses",
+            "ollama"
+        ],
+        tool_completions: list[tuple[dict[str, str]]]
     ):
         tool_messages = []
         for tool_completion in tool_completions:

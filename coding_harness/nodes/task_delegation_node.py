@@ -33,7 +33,8 @@ async def task_delegator(state: MainAgentState):
         sub_agent_state: GenericSubAgentState = {
             "current_task": task,
             "session_messages": sub_agent_session_messages,
-            "session_context_messages": sub_agent_session_messages
+            "session_context_messages": sub_agent_session_messages,
+            "llm_provider_api": state["llm_provider_api"]
         }
         tasks_to_send.append(
             compiled_sub_agent_orchestration.ainvoke(sub_agent_state)

@@ -17,9 +17,6 @@ from helpers.parse_utils import LLMResponseParsing
 logger = logging.getLogger(__name__)
 
 
-agent_tool_registry = {**SUB_AGENT_TOOLS}
-# agent_tools = build_ollama_tools(agent_tool_registry)
-agent_tools = build_openai_tools(agent_tool_registry)
 
 
 @traceable
@@ -27,6 +24,7 @@ async def generic_sub_agent(state: GenericSubAgentState):
     logger.info("Inside generic sub agent node")
     os.makedirs(env_settings.AGENT_WORK_DIR, exist_ok=True)
 
+    # prompt setting
     prompt_template = await load_prompt_template(prompt_file="generic_sub_agent.system")
     agent_skills_metadata = generic_sub_agent_skill_registry.SKILLS_METADATA
     formatted_skills_metadata = "\n\n".join(
@@ -38,6 +36,14 @@ async def generic_sub_agent(state: GenericSubAgentState):
         "formatted_skills_metadata": formatted_skills_metadata
     }
     prompt = compile_prompt(prompt_content=prompt_template, input_mapping=prompt_vars)
+
+    # tool setting
+    agent_tool_registry = {**SUB_AGENT_TOOLS}
+    # agent_tools = build_ollama_tools(agent_tool_registry)
+    agent_tools = build_openai_tools(
+        llm_provider_api=state["llm_provider_api"],
+        tool_registry=agent_tool_registry
+    )
 
     messages = [{
         "role": "system",
@@ -52,6 +58,7 @@ async def generic_sub_agent(state: GenericSubAgentState):
     #     think=True
     # )
     llm_response: Response = await call_openai_llm(
+        llm_provider_api=state["llm_provider_api"],
         messages=messages,
         # model=env_settings.OLLAMA_SUB_AGENT_MODEL,
         model=env_settings.OPENAI_COMPATIBLE_GENERIC_SUB_AGENT_LLM,
@@ -61,8 +68,8 @@ async def generic_sub_agent(state: GenericSubAgentState):
 
     # response parsing
     parsed_llm_response = LLMResponseParsing.parse_llm_response(
-        llm_response=llm_response,
-        llm_provider_api=state["llm_provider_api"]
+        llm_provider_api=state["llm_provider_api"],
+        llm_response=llm_response
     )
 
     logger.info("Exiting generic sub agent node")

@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
         exceptions_to_retry=[TimeoutError]
 )
 async def call_openai_llm(
+    llm_provider_api: Literal[
+        "openai_chat_completions",
+        "openai_responses"
+    ],
     messages: list[dict[str, str]],
     model: str,
     reasoning_effort: Literal[
@@ -33,24 +37,31 @@ async def call_openai_llm(
     tools: list[dict[str, str]] | None = None
 ) -> Response:
     logger.info("Calling llm via openai client...")
-
     logger.debug(f"Input messages: {messages}")
-    llm_response = await openai_manager.client.responses.create(
-        model=model,
-        input=messages,
-        reasoning={
-            "effort": reasoning_effort
-        },
-        tools=tools
-    )
+
+    if llm_provider_api == "openai_chat_completions":
+        llm_response = await openai_manager.client.chat.completions.create(
+            model=model,
+            messages=messages,
+            reasoning_effort=reasoning_effort,
+            tools=tools
+        )
+    elif llm_provider_api == "openai_responses":
+        llm_response = await openai_manager.client.responses.create(
+            model=model,
+            input=messages,
+            reasoning={
+                "effort": reasoning_effort
+            },
+            tools=tools
+        )
 
     logger.info(f"Raw LLM response: {llm_response}")
-    logger.info(
-        "Token usage:\n"
-        f"Input tokens: {llm_response.usage.input_tokens}\n"
-        f"Output tokens: {llm_response.usage.output_tokens}"
-    )
-
+    # logger.info(
+    #     "Token usage:\n"
+    #     f"Input tokens: {llm_response.usage.input_tokens}\n"
+    #     f"Output tokens: {llm_response.usage.output_tokens}"
+    # )
     return llm_response
 
 
@@ -60,6 +71,10 @@ async def call_openai_llm(
         exceptions_to_retry=[TimeoutError]
 )
 async def call_openai_llm_with_stream(
+    llm_provider_api: Literal[
+        "openai_chat_completions",
+        "openai_responses"
+    ],
     messages: list[dict[str, str]],
     model: str,
     reasoning_effort: Literal[
@@ -74,20 +89,31 @@ async def call_openai_llm_with_stream(
     tools: list[dict[str, str]] | None = None
 ):
     logger.info("Calling llm via openai client...")
-
     logger.debug(f"Input messages: {messages}")
-    llm_response = await openai_manager.client.responses.create(
-        model=model,
-        input=messages,
-        reasoning={
-            "effort": reasoning_effort
-        },
-        tools=tools,
-        stream=True
-    )
+
+    if llm_provider_api == "openai_chat_completions":
+        llm_response = await openai_manager.client.chat.completions.create(
+            model=model,
+            messages=messages,
+            reasoning_effort=reasoning_effort,
+            tools=tools,
+            stream=True,
+            stream_options={
+                "include_usage": True
+            }
+        )
+    elif llm_provider_api == "openai_responses":
+        llm_response = await openai_manager.client.responses.create(
+            model=model,
+            input=messages,
+            reasoning={
+                "effort": reasoning_effort
+            },
+            tools=tools,
+            stream=True
+        )
 
     logger.info(f"Raw LLM response: {llm_response}")
-
     async for event in llm_response:
         yield event
 

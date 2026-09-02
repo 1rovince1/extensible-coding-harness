@@ -12,15 +12,10 @@ from coding_harness.tool_registries.main_agent_tool_registry import TOOLS as MAI
 from agentic_tools.adapter import build_ollama_tools, build_openai_tools
 from coding_harness.skill_registries.main_agent_skill_registry import main_agent_skill_registry
 from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
-from helpers.stream_utils import stream_response
+from helpers.stream_utils import stream_and_consolidate_response
 from helpers.parse_utils import LLMResponseParsing
 
 logger = logging.getLogger(__name__)
-
-
-agent_tool_registry = {**MAIN_AGENT_TOOLS}
-# agent_tools = build_ollama_tools(agent_tool_registry)
-agent_tools = build_openai_tools(agent_tool_registry)
 
 
 @traceable
@@ -29,6 +24,7 @@ async def main_agent(state: MainAgentState):
     logger.debug(f"state inside main agent node: {state}")
     os.makedirs(env_settings.AGENT_WORK_DIR, exist_ok=True)
 
+    # prompt setting
     prompt_template = await load_prompt_template(prompt_file="main_agent.system")
     agent_skills_metadata = main_agent_skill_registry.SKILLS_METADATA
     formatted_skills_metadata = "\n\n".join(
@@ -42,6 +38,14 @@ async def main_agent(state: MainAgentState):
     prompt = compile_prompt(prompt_content=prompt_template, input_mapping=prompt_vars)
     # print(prompt)
 
+    # tool setting
+    agent_tool_registry = {**MAIN_AGENT_TOOLS}
+    # agent_tools = build_ollama_tools(agent_tool_registry)
+    agent_tools = build_openai_tools(
+        llm_provider_api=state["llm_provider_api"],
+        tool_registry=agent_tool_registry
+    )
+
     messages = [{
         "role": "system",
         "content": prompt.strip()
@@ -50,28 +54,31 @@ async def main_agent(state: MainAgentState):
 
     if not state.get("streaming", False):
         llm_response: Response = await call_openai_llm(
+            llm_provider_api=state["llm_provider_api"],
             messages=messages,
             model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
             tools=agent_tools,
-            think="medium"
+            reasoning_effort="medium"
         )
     else:
         llm_stream = call_openai_llm_with_stream(
+            llm_provider_api=state["llm_provider_api"],
             messages=messages,
             # model=env_settings.OLLAMA_MAIN_AGENT_MODEL,
             model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
             tools=agent_tools,
             reasoning_effort="medium"
         )
-        llm_response = await stream_response(
+        llm_response = await stream_and_consolidate_response(
+            llm_provider_api=state["llm_provider_api"],
             agent_name="main_agent",
             stream_generator=llm_stream
         )
 
-    # response parsing
+    # # response parsing
     parsed_llm_response = LLMResponseParsing.parse_llm_response(
-        llm_response=llm_response,
-        llm_provider_api=state["llm_provider_api"]
+        llm_provider_api=state["llm_provider_api"],
+        llm_response=llm_response
     )
     
     logger.info("Exiting main agent node")
