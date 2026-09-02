@@ -1,4 +1,7 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class EnvSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="allow")
@@ -14,6 +17,12 @@ class EnvSettings(BaseSettings):
     OLLAMA_MAIN_AGENT_MODEL: str = "gemma4:cloud"
     OLLAMA_SUB_AGENT_MODEL: str = "gemma4:cloud"
     OLLAMA_CONTEXT_COMPRESSION_MODEL: str = "gpt-oss:120b-cloud"
+
+    LLM_PROVIDER_API: Literal[
+        "openai_chat_completions",
+        "openai_responses",
+        "ollama"
+    ] = "openai_responses"
 
     CONTEXT_TOKENS_ALLOWED: int = 65536
     AGENT_WORK_DIR: str
@@ -43,5 +52,6 @@ class EnvSettings(BaseSettings):
     REDIS_POOL_MAX_CONNECTIONS: int = 20
 
     CHAT_SESSION_EXPIRATION_TIME: int
+
 
 env_settings = EnvSettings()
