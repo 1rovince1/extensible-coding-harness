@@ -3,13 +3,12 @@ import logging
 import json
 
 from langsmith import traceable
-from openai.types.responses.response import Response
 
-from services.llm_service import call_ollama_llm, call_openai_llm
+from services.llm_service import call_llm
 from coding_harness.states import GenericSubAgentState
 from config.env_config import env_settings
 from coding_harness.tool_registries.generic_sub_agent_tool_registry import TOOLS as SUB_AGENT_TOOLS
-from agentic_tools.adapter import build_ollama_tools, build_openai_tools
+from agentic_tools.adapter import build_tools
 from coding_harness.skill_registries.generic_sub_agent_skill_registry import generic_sub_agent_skill_registry
 from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
 from helpers.parse_utils import LLMResponseParsing
@@ -39,28 +38,22 @@ async def generic_sub_agent(state: GenericSubAgentState):
 
     # tool setting
     agent_tool_registry = {**SUB_AGENT_TOOLS}
-    # agent_tools = build_ollama_tools(agent_tool_registry)
-    agent_tools = build_openai_tools(
+    agent_tools = build_tools(
         llm_provider_api=state["llm_provider_api"],
         tool_registry=agent_tool_registry
     )
 
+    # context setting
     messages = [{
         "role": "system",
         "content": prompt.strip()
     }]
     messages.extend(state.get("session_context_messages", []))
-    
-    # llm_response = await call_ollama_llm(
-    #     messages=messages,
-    #     model=env_settings.OLLAMA_SUB_AGENT_MODEL,
-    #     tools=agent_tools,
-    #     think=True
-    # )
-    llm_response: Response = await call_openai_llm(
+
+    # llm call
+    llm_response = await call_llm(
         llm_provider_api=state["llm_provider_api"],
         messages=messages,
-        # model=env_settings.OLLAMA_SUB_AGENT_MODEL,
         model=env_settings.OPENAI_COMPATIBLE_GENERIC_SUB_AGENT_LLM,
         tools=agent_tools,
         reasoning_effort="medium"

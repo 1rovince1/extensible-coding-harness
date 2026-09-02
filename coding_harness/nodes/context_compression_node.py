@@ -2,11 +2,10 @@ import logging
 
 from langsmith import traceable
 
-from services.llm_service import call_ollama_llm, call_openai_llm, call_openai_llm_with_stream
+from services.llm_service import call_llm
 from coding_harness.states import MainAgentState, GenericSubAgentState
 from config.env_config import env_settings
 from coding_harness.prompts.pompt_utils import compile_prompt, load_prompt_template
-from helpers.stream_utils import stream_and_consolidate_response
 from helpers.parse_utils import LLMResponseParsing
 
 logger = logging.getLogger(__name__)
@@ -36,31 +35,15 @@ async def context_compressor(state: MainAgentState | GenericSubAgentState):
                 "content": f"Context to compress:\n{messages_to_compress}"
             }
         ]
-        # llm_response = await call_ollama_llm(
-        #     messages=messages,
-        #     model=env_settings.OLLAMA_CONTEXT_COMPRESSION_MODEL
-        # )
-        # compressed_context_messages = [{
-        #     "role": "user",
-        #     "content": f"Compressed context of what happened till now:\n{llm_response.message.content}"
-        # }]
-        if not state.get("streaming", False):
-            llm_response = await call_openai_llm(
-                llm_provider_api=state["llm_provider_api"],
-                messages=messages,
-                model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
-            )
-        else:
-            llm_stream = call_openai_llm_with_stream(
-                llm_provider_api=state["llm_provider_api"],
-                messages=messages,
-                model=env_settings.OPENAI_COMPATIBLE_CONTEXT_COMPRESSION_LLM
-            )
-            llm_response = await stream_and_consolidate_response(
-                llm_provider_api=state["llm_provider_api"],
-                agent_name="context_compressor_agent",
-                stream_generator=llm_stream
-            )
+
+        llm_response = await call_llm(
+            llm_provider_api=state["llm_provider_api"],
+            messages=messages,
+            model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
+            reasoning_effort="medium",
+            stream=state["streaming"],
+            invoking_agent_name="context_compressor_agent"
+        )
 
         parsed_llm_response = LLMResponseParsing.parse_llm_response(
             llm_provider_api=state["llm_provider_api"],

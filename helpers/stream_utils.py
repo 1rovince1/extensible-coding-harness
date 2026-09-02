@@ -29,8 +29,8 @@ async def stream_and_consolidate_response(
         "openai_chat_completions",
         "openai_responses"
     ],
-    agent_name: str,
-    stream_generator
+    stream_generator,
+    agent_name: str = "",
 ):
     stream_writer = get_stream_writer()
     consolidated_llm_response = None
