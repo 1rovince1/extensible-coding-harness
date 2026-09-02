@@ -4,7 +4,7 @@ LangGraph graph:
 
 ## Done:
 - skills' integration
-- provider agnosticism (integrated openai library - supported by multiple providers - need to also include chat-completeions API in addition to responses API for better support)
+- provider agnosticism (integrated openai sdk - supported by multiple providers)
 - streaming response to user - in progress (streaming of sub-agents, tools and skills remains if desired)
 
 ### TODO:
