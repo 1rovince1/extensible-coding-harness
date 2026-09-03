@@ -41,7 +41,7 @@ async def context_compressor(state: MainAgentState | GenericSubAgentState):
             messages=messages,
             model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
             reasoning_effort="medium",
-            stream=state["streaming"],
+            stream=state.get("streaming", False),
             invoking_agent_name="context_compressor_agent"
         )
 

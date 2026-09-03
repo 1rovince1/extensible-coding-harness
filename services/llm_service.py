@@ -25,7 +25,7 @@ async def call_llm(
     model: str,
     reasoning_effort: str | bool,
     tools: list = [],
-    invoking_agent_name : str = "",
+    invoking_agent_name: str = "",
     stream: bool = False
 ):
     logger.info("Calling LLM...")

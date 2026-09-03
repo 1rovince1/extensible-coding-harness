@@ -42,8 +42,9 @@ class GenericSubAgentState(TypedDict):
         "openai_responses",
         "ollama"
     ]
-    
+
     current_task: str
+
     # session_messages: Annotated[list[dict[str, str]], operator.add]
     session_messages: list[dict[str, str]]
     session_context_messages: list[dict[str, str]]

@@ -56,7 +56,7 @@ async def main_agent(state: MainAgentState):
         model=env_settings.OPENAI_COMPATIBLE_MAIN_AGENT_LLM,
         tools=agent_tools,
         reasoning_effort="medium",
-        stream=state["streaming"],
+        stream=state.get("streaming", False),
         invoking_agent_name="main_agent"
     )
 
