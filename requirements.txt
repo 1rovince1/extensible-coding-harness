@@ -1,7 +1,5 @@
 langgraph==1.2.9
-# langchain-ollama==1.1.0
 pygraphviz==2.0
-# deepagents==0.7.0a7
 fastapi[standard]==0.139.2
 uvicorn[standard]==0.51.0
 ollama==0.6.2
