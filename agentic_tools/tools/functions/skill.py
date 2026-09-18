@@ -3,10 +3,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def load_skill(skill_registry: dict, skill_name: str) -> str:
+async def load_skill(skill_name: str, additional_context: dict = {}) -> str:
     """
     Returns the content of a skill
     """
+    skill_registry = additional_context.get("skill_registry", {})
     logger.info(f"Skill request: {skill_name}")
 
     if skill_name not in skill_registry:

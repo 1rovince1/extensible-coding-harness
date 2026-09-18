@@ -52,7 +52,7 @@ async def stream_and_consolidate_response(
         consolidated_llm_response.choices[0].message.tool_calls = []
         consolidated_llm_response.usage = OpenAICompletionUsage.model_construct()
         async for chunk in stream_generator:
-            print(chunk)
+            # print(chunk)
             if chunk.usage:
                 consolidated_llm_response.usage = chunk.usage
                 last_chunk_type == "usage"
@@ -66,6 +66,10 @@ async def stream_and_consolidate_response(
                 stream_writer(create_stream_event("chunk", f"{agent_name}_reasoning", chunk.choices[0].delta.reasoning))
                 consolidated_llm_response.choices[0].message.reasoning += chunk.choices[0].delta.reasoning
                 last_chunk_type = "reasoning"
+            # elif hasattr(chunk.choices[0].delta, "reasoning_content"):
+            #     stream_writer(create_stream_event("chunk", f"{agent_name}_reasoning", chunk.choices[0].delta.reasoning_content))
+            #     consolidated_llm_response.choices[0].message.reasoning += chunk.choices[0].delta.reasoning_content
+            #     last_chunk_type = "reasoning"
 
             elif chunk.choices[0].delta.content:
                 if last_chunk_type == "reasoning":
@@ -83,7 +87,7 @@ async def stream_and_consolidate_response(
 
     elif llm_provider_api == "openai_responses":
         async for chunk in stream_generator:
-            print(chunk)
+            # print(chunk)
             if chunk.type == "response.completed":
                 consolidated_llm_response = chunk.response
             
@@ -106,7 +110,7 @@ async def stream_and_consolidate_response(
         consolidated_llm_response.message.content = ""
         consolidated_llm_response.message.tool_calls = []
         async for chunk in stream_generator:
-            print(chunk)
+            # print(chunk)
             if chunk.done:
                 if last_chunk_type == "response":
                     stream_writer(create_stream_event("stream_break", f"{agent_name}_response"))

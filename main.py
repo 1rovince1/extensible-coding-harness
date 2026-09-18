@@ -9,8 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from clients.ollama_llm_client import ollama_manager
 from clients.openai_llm_client import openai_manager
 from clients.redis_client import redis_manager
-from coding_harness.skill_registries.main_agent_skill_registry import main_agent_skill_registry
-from coding_harness.skill_registries.generic_sub_agent_skill_registry import generic_sub_agent_skill_registry
+from harnesses.coding_harness.workflow.registries.skill_registries.main_agent_skill_registry import main_agent_skill_registry
+from harnesses.coding_harness.workflow.registries.skill_registries.generic_sub_agent_skill_registry import generic_sub_agent_skill_registry
 from api.routes.coding_harness import router as CodingRouter
 from api.routes.session_management import router as SessionRouter
 

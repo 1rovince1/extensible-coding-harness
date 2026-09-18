@@ -1,5 +1,5 @@
 ### Coding Harness Worklfow
-LangGraph graph:  
+LangGraph agent loop:  
 ![graph.png](graph.png)
 
 ## Done:

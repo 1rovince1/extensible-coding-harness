@@ -173,19 +173,19 @@ class ToolResponseParsing:
                 tool_messages.append({
                     "role": "tool",
                     "tool_call_id": tool_completion[0]["tool_call_id"],
-                    "content": tool_completion[1]
+                    "content": str(tool_completion[1])
                 })
             elif llm_provider_api == "openai_responses":
                 tool_messages.append({
                     "type": "function_call_output",
                     "call_id": tool_completion[0]["tool_call_id"],
-                    "output": tool_completion[1]
+                    "output": str(tool_completion[1])
                 })
             elif llm_provider_api == "ollama":
                 tool_messages.append({
                     "role": "tool",
                     "tool_name": tool_completion[0]["tool_name"],
-                    "content": tool_completion[1]
+                    "content": str(tool_completion[1])
                 })
 
         return tool_messages

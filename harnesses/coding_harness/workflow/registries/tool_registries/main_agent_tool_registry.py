@@ -1,4 +1,5 @@
 from agentic_tools.tools import *
+from ....core_tools.tools import *
 
 TOOLS = {
     "execute_shell_command": {
@@ -6,9 +7,14 @@ TOOLS = {
         "description": execute_shell_command.__doc__.strip(),
         "input_schema": ExcuteShellCommand
     },
+    # "invoke_generic_sub_agent": {
+    #     "description": "General reasoning sub-agent with tools",
+    #     "input_schema": SubAgentTool
+    # },
     "invoke_generic_sub_agent": {
-        "description": "General reasoning sub-agent with tools",
-        "input_schema": SubAgentTool
+        "callable_fn": delegate_task,
+        "description": delegate_task.__doc__.strip(),
+        "input_schema": DelegateTask
     },
     "load_skill": {
         "callable_fn": load_skill,

@@ -4,7 +4,7 @@ import json
 import time
 
 from clients.redis_client import redis_manager
-from coding_harness.orchestration_main_agent import compiled_harness
+from harnesses.coding_harness.entrypoint import run_harness, run_harness_streaming
 from config.env_config import env_settings
 
 logger = logging.getLogger(__name__)
@@ -14,104 +14,22 @@ async def process_user_request(
         user_query: str,
         session_id: UUID
 ):
-    logger.info(f"Processing user request (session-{session_id}): {user_query}")
-
-    session_key = f"session-{session_id}"
-    redis_session = await redis_manager.client.get(name=session_key)
-    session_state = json.loads(redis_session) if redis_session else {
-        "session_messages": [],
-        "session_context_messages": []
-    }
-
-    user_query_message = {
-        "role": "user",
-        "content": user_query
-    }
-    session_state["session_messages"].append(user_query_message)
-    session_state["session_context_messages"].append(user_query_message)
-    session_state["streaming"] = False
-    session_state["llm_provider_api"] = env_settings.LLM_PROVIDER_API
-
-    resultant_state = await compiled_harness.ainvoke(session_state)
-    logger.info(f"User request processing result: {resultant_state}")
-
-    resultant_state["updated_at"] = int(time.time())
-
-    await redis_manager.client.set(
-        name=session_key,
-        value=json.dumps(resultant_state),
-        ex=env_settings.CHAT_SESSION_EXPIRATION_TIME
+    response_messages = await run_harness(
+        session_id=session_id,
+        user_query=user_query
     )
-
-    new_messages_start_index = len(session_state["session_messages"])
-    new_messages = resultant_state["session_messages"][new_messages_start_index:]
-
-    # return resultant_state["session_messages"][-1]["content"]
-    return new_messages
+    return response_messages
 
 
 async def process_user_request_streaming(
         user_query: str,
         session_id: UUID
 ):
-    logger.info(f"Processing user request (session-{session_id}): {user_query}")
-
-    session_key = f"session-{session_id}"
-    redis_session = await redis_manager.client.get(name=session_key)
-    session_state = json.loads(redis_session) if redis_session else {
-        "session_messages": [],
-        "session_context_messages": []
-    }
-
-    user_query_message = {
-        "role": "user",
-        "content": user_query
-    }
-    session_state["session_messages"].append(user_query_message)
-    session_state["session_context_messages"].append(user_query_message)
-    session_state["streaming"] = True
-    session_state["llm_provider_api"] = env_settings.LLM_PROVIDER_API
-
-    # graph_config = {
-    #     "configurable": {
-    #         "thread_id": str(session_key)
-    #     }
-    # }
-
-    # resultant_state = await compiled_harness.ainvoke(session_state)
-    async for event in compiled_harness.astream(
-        session_state,
-        # config=graph_config,
-        stream_mode=["custom", "updates", "values"],
-        version="v2"
+    async for event in run_harness_streaming(
+        session_id=session_id,
+        user_query=user_query
     ):
-        if event["type"] == "custom":
-            # print(event)
-            yield event
-        # elif event["type"] == "updates":
-        #     for node_name, state in event["data"].items():
-        #         if node_name == "context_manager":
-        #             yield {
-        #                 "data": {
-        #                     "compressed_context": state.get("session_context_messages", [])
-        #                 }
-        #             }
-        elif event["type"] == "values":
-            resultant_state = event["data"]
-
-    # resultant_state = await compiled_harness.aget_state(config=graph_config)
-    # print("\n\nRESULTANT_STATE", resultant_state)
-    logger.info(f"User request processing result: {resultant_state}")
-
-    resultant_state["updated_at"] = int(time.time())
-
-    await redis_manager.client.set(
-        name=session_key,
-        value=json.dumps(resultant_state),
-        ex=env_settings.CHAT_SESSION_EXPIRATION_TIME
-    )
-
-    # return resultant_state["session_messages"][-1]["content"]
+        yield event
 
 
 async def get_all_active_sessions():

@@ -10,7 +10,7 @@ ALLOWED_CMDS = env_settings.SHELL_COMMANDS_ALLOWED
 SHELL_COMMAND_TIMEOUT = 30
 
 
-async def execute_shell_command(command: str) -> str:
+async def execute_shell_command(command: str, additional_context: dict = {}) -> str:
     """
     Execute a shell command and return its output
     """
